@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 
 const db = new Database('ambers_healthcare.db');
+console.log("Database initialized: ambers_healthcare.db");
 
 // Initialize tables
 db.exec(`

@@ -122,7 +122,13 @@ const Navbar = () => {
               <Link to="/pricing" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Pricing</Link>
               {user ? (
                 <>
-                  <Link to="/dashboard" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Dashboard</Link>
+                  <Link 
+                    to={user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/candidate'} 
+                    className="block text-lg font-medium text-slate-700" 
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
                   <button onClick={handleLogout} className="block w-full text-left text-lg font-medium text-red-600">Logout</button>
                 </>
               ) : (
@@ -509,17 +515,23 @@ const Login = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (data.user) {
-      login(data.user);
-      navigate(data.user.role === 'admin' ? '/admin' : data.user.role === 'employer' ? '/employer' : '/candidate');
-    } else {
-      setError(data.error);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        login(data.user);
+        navigate(data.user.role === 'admin' ? '/admin' : data.user.role === 'employer' ? '/employer' : '/candidate');
+      } else {
+        setError(data.error || "Login failed. Please check your credentials.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("A network error occurred. Please try again.");
     }
   };
 
@@ -571,17 +583,23 @@ const Register = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, role })
-    });
-    const data = await res.json();
-    if (data.user) {
-      login(data.user);
-      navigate(role === 'employer' ? '/employer' : '/candidate');
-    } else {
-      setError(data.error);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role })
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        login(data.user);
+        navigate(role === 'employer' ? '/employer' : '/candidate');
+      } else {
+        setError(data.error || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError("A network error occurred. Please try again.");
     }
   };
 
@@ -649,6 +667,33 @@ const CandidateDashboard = () => {
     experience_summary: ""
   });
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'candidate') {
+      fetch("/api/candidates/me")
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) {
+            let specialties = [];
+            try {
+              specialties = typeof data.role_specialties === 'string' 
+                ? JSON.parse(data.role_specialties) 
+                : (data.role_specialties || []);
+            } catch (e) {
+              specialties = [];
+            }
+            setProfile({
+              full_name: data.full_name || "",
+              phone: data.phone || "",
+              parish: data.parish || ALLOWED_PARISHES[0],
+              role_specialties: Array.isArray(specialties) ? specialties : [],
+              experience_summary: data.experience_summary || ""
+            });
+          }
+        })
+        .catch(err => console.error("Failed to fetch candidate profile", err));
+    }
+  }, [user]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -775,30 +820,54 @@ const EmployerDashboard = () => {
   const [matches, setMatches] = useState<any[]>([]);
 
   const fetchData = async () => {
-    const [empRes, jobsRes, introsRes, invRes] = await Promise.all([
-      fetch("/api/employers/me"),
-      fetch("/api/employers/jobs"),
-      fetch("/api/employers/introductions"),
-      fetch("/api/employers/invoices")
-    ]);
-    const empData = await empRes.json();
-    setEmployer(empData);
-    if (empData) setProfile(empData);
-    setJobs(await jobsRes.json());
-    setIntros(await introsRes.json());
-    setInvoices(await invRes.json());
+    try {
+      const [empRes, jobsRes, introsRes, invRes] = await Promise.all([
+        fetch("/api/employers/me"),
+        fetch("/api/employers/jobs"),
+        fetch("/api/employers/introductions"),
+        fetch("/api/employers/invoices")
+      ]);
+      
+      if (empRes.ok) {
+        const empData = await empRes.json();
+        setEmployer(empData);
+        if (empData) setProfile(empData);
+      }
+      if (jobsRes.ok) {
+        const data = await jobsRes.json();
+        if (Array.isArray(data)) setJobs(data);
+      }
+      if (introsRes.ok) {
+        const data = await introsRes.json();
+        if (Array.isArray(data)) setIntros(data);
+      }
+      if (invRes.ok) {
+        const data = await invRes.json();
+        if (Array.isArray(data)) setInvoices(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch employer data", err);
+    }
   };
 
   const fetchMatches = async (jobId: string) => {
-    const res = await fetch(`/api/jobs/${jobId}/matches`);
-    const data = await res.json();
-    setMatches(data);
-    setSelectedJobMatches(jobId);
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/matches`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setMatches(data);
+        setSelectedJobMatches(jobId);
+      }
+    } catch (err) {
+      console.error("Failed to fetch matches", err);
+    }
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user?.role === 'employer') {
+      fetchData();
+    }
+  }, [user]);
 
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -1250,19 +1319,32 @@ const AdminDashboard = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
 
   const fetchData = async () => {
-    const [statsRes, candRes, jobsRes] = await Promise.all([
-      fetch("/api/admin/stats"),
-      fetch("/api/admin/candidates"),
-      fetch("/api/admin/jobs")
-    ]);
-    setStats(await statsRes.json());
-    setCandidates(await candRes.json());
-    setJobs(await jobsRes.json());
+    try {
+      const [statsRes, candRes, jobsRes] = await Promise.all([
+        fetch("/api/admin/stats"),
+        fetch("/api/admin/candidates"),
+        fetch("/api/admin/jobs")
+      ]);
+      
+      if (statsRes.ok) setStats(await statsRes.json());
+      if (candRes.ok) {
+        const data = await candRes.json();
+        if (Array.isArray(data)) setCandidates(data);
+      }
+      if (jobsRes.ok) {
+        const data = await jobsRes.json();
+        if (Array.isArray(data)) setJobs(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin data", err);
+    }
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user?.role === 'admin') {
+      fetchData();
+    }
+  }, [user]);
 
   const handleIntroSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -1278,10 +1360,10 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredCandidates = candidates.filter(c => 
-    c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.parish.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCandidates = Array.isArray(candidates) ? candidates.filter(c => 
+    (c.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.parish || "").toLowerCase().includes(searchTerm.toLowerCase())
+  ) : [];
 
   if (user?.role !== 'admin') return <div className="pt-32 text-center">Unauthorized</div>;
 
@@ -1456,11 +1538,20 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {JSON.parse(selectedCandidate.role_specialties || "[]").map((s: string) => (
-                    <span key={s} className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                      {s}
-                    </span>
-                  ))}
+                  {(() => {
+                    try {
+                      const specialties = typeof selectedCandidate.role_specialties === 'string' 
+                        ? JSON.parse(selectedCandidate.role_specialties) 
+                        : selectedCandidate.role_specialties;
+                      return (Array.isArray(specialties) ? specialties : []).map((s: string) => (
+                        <span key={s} className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                          {s}
+                        </span>
+                      ));
+                    } catch (e) {
+                      return null;
+                    }
+                  })()}
                 </div>
               </div>
 

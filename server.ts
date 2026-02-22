@@ -46,6 +46,7 @@ async function startServer() {
   // --- Auth Routes ---
   app.post("/api/auth/register", async (req, res) => {
     const { email, password, role } = req.body;
+    console.log(`Register attempt: ${email} as ${role}`);
     if (!['candidate', 'employer'].includes(role)) return res.status(400).json({ error: "Invalid role" });
 
     try {
@@ -55,21 +56,38 @@ async function startServer() {
       
       const token = jwt.sign({ id: userId, email, role }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
+      console.log(`Register success: ${email}`);
       res.json({ user: { id: userId, email, role } });
     } catch (err: any) {
+      console.error(`Register error: ${err.message}`);
       res.status(400).json({ error: err.message });
     }
   });
 
   app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
-    const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: "Invalid credentials" });
+    console.log(`Login attempt: ${email}`);
+    try {
+      const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+      if (!user) {
+        console.log(`Login failed: User not found - ${email}`);
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        console.log(`Login failed: Password mismatch - ${email}`);
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+      res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
+      console.log(`Login success: ${email} (${user.role})`);
+      res.json({ user: { id: user.id, email: user.email, role: user.role } });
+    } catch (err: any) {
+      console.error(`Login error: ${err.message}`);
+      res.status(500).json({ error: "Internal server error" });
     }
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
-    res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
-    res.json({ user: { id: user.id, email: user.email, role: user.role } });
   });
 
   app.post("/api/auth/logout", (req, res) => {
