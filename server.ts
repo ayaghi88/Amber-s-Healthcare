@@ -5,14 +5,43 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import db from "./db.ts";
-import Stripe from "stripe";
 import dotenv from "dotenv";
 import path from "path";
 
 dotenv.config();
 
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-key";
+
+// PayPal Access Token Generator
+async function getPayPalAccessToken() {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  const mode = process.env.PAYPAL_MODE || "sandbox";
+
+  if (!clientId || !clientSecret) {
+    throw new Error("PayPal Client ID or Client Secret is not configured.");
+  }
+
+  const base = mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
+  const response = await fetch(`${base}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "grant_type=client_credentials"
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to get PayPal token: ${text}`);
+  }
+
+  const data = await response.json() as any;
+  return data.access_token;
+}
 
 async function startServer() {
   const app = express();
@@ -236,8 +265,119 @@ async function startServer() {
 
   app.post("/api/employers/accept-agreement", authenticate, (req: any, res) => {
     if (req.user.role !== 'employer') return res.status(403).json({ error: "Forbidden" });
-    db.prepare("UPDATE employers SET accepted_agreement_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(req.user.id);
+    
+    // Check if employer record exists
+    const existing = db.prepare("SELECT * FROM employers WHERE user_id = ?").get(req.user.id);
+    if (existing) {
+      db.prepare("UPDATE employers SET accepted_agreement_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(req.user.id);
+    } else {
+      const id = uuidv4();
+      db.prepare(`
+        INSERT INTO employers (id, user_id, company_name, contact_name, phone, parish, website, accepted_agreement_at)
+        VALUES (?, ?, 'Pending Setup', 'Pending Setup', '', 'East Baton Rouge', '', CURRENT_TIMESTAMP)
+      `).run(id, req.user.id);
+    }
     res.json({ success: true });
+  });
+
+  // --- Payment Config & Integrations ---
+  app.get("/api/config", (req, res) => {
+    res.json({
+      paypalClientId: process.env.PAYPAL_CLIENT_ID || null,
+      paypalBusinessEmail: process.env.PAYPAL_BUSINESS_EMAIL || null,
+      isPayPalConfigured: !!(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET)
+    });
+  });
+
+  app.post("/api/paypal/create-order", authenticate, async (req: any, res) => {
+    const { invoiceId } = req.body;
+    try {
+      const invoice: any = db.prepare("SELECT * FROM placement_invoices WHERE id = ?").get(invoiceId);
+      if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+
+      const accessToken = await getPayPalAccessToken();
+      const mode = process.env.PAYPAL_MODE || "sandbox";
+      const base = mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+
+      const response = await fetch(`${base}/v2/checkout/orders`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [{
+            reference_id: invoiceId,
+            amount: {
+              currency_code: "USD",
+              value: (invoice.amount_cents / 100).toFixed(2)
+            },
+            description: `Placement fee invoice ${invoiceId}`
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        return res.status(400).json({ error: `PayPal Order Creation failed: ${errText}` });
+      }
+
+      const order = await response.json() as any;
+      res.json(order);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/paypal/capture-order", authenticate, async (req: any, res) => {
+    const { orderID, invoiceId } = req.body;
+    try {
+      const accessToken = await getPayPalAccessToken();
+      const mode = process.env.PAYPAL_MODE || "sandbox";
+      const base = mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+
+      const response = await fetch(`${base}/v2/checkout/orders/${orderID}/capture`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        return res.status(400).json({ error: `PayPal Order Capture failed: ${errText}` });
+      }
+
+      const captureData = await response.json() as any;
+      
+      if (captureData.status === "COMPLETED") {
+        db.prepare(`
+          UPDATE placement_invoices 
+          SET status = 'paid', paid_at = CURRENT_TIMESTAMP, stripe_invoice_id = ?, stripe_payment_status = 'paid'
+          WHERE id = ?
+        `).run(`paypal_${orderID}`, invoiceId);
+      }
+
+      res.json(captureData);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/invoices/:id/simulate-pay", authenticate, (req: any, res) => {
+    const { id } = req.params;
+    try {
+      db.prepare(`
+        UPDATE placement_invoices 
+        SET status = 'paid', paid_at = CURRENT_TIMESTAMP, stripe_invoice_id = ?, stripe_payment_status = 'paid'
+        WHERE id = ?
+      `).run(`sim_${uuidv4().substring(0, 8)}`, id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   // --- Job Routes ---
@@ -296,74 +436,15 @@ async function startServer() {
 
       const invoiceId = uuidv4();
       
-      let stripeInvoiceId = null;
-      if (stripe) {
-        // Create Stripe Customer if not exists
-        let employer: any = db.prepare("SELECT stripe_customer_id FROM employers WHERE id = ?").get(intro.employer_id);
-        let customerId = employer.stripe_customer_id;
-        
-        if (!customerId) {
-          const customer = await stripe.customers.create({
-            email: intro.employer_email,
-            name: intro.company_name,
-            metadata: { employer_id: intro.employer_id }
-          });
-          customerId = customer.id;
-          db.prepare("UPDATE employers SET stripe_customer_id = ? WHERE id = ?").run(customerId, intro.employer_id);
-        }
-
-        // Create Invoice Item
-        await stripe.invoiceItems.create({
-          customer: customerId,
-          amount: 450000,
-          currency: 'usd',
-          description: `Placement fee for ${intro.candidate_name}`,
-        });
-
-        // Create Invoice
-        const stripeInvoice = await stripe.invoices.create({
-          customer: customerId,
-          auto_advance: true,
-          collection_method: 'send_invoice',
-          days_until_due: 7,
-        });
-
-        // Send Invoice
-        const finalizedInvoice = await stripe.invoices.sendInvoice(stripeInvoice.id);
-        stripeInvoiceId = finalizedInvoice.id;
-      }
-
       db.prepare(`
         INSERT INTO placement_invoices (id, employer_id, candidate_id, job_id, introduction_id, stripe_invoice_id, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(invoiceId, intro.employer_id, intro.candidate_id, intro.job_id, introId, stripeInvoiceId, stripeInvoiceId ? 'sent' : 'draft');
+        VALUES (?, ?, ?, ?, ?, ?, 'sent')
+      `).run(invoiceId, intro.employer_id, intro.candidate_id, intro.job_id, introId, `paypal_draft_${invoiceId}`);
 
       res.json({ success: true, invoiceId });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
-  });
-
-  // --- Stripe Webhook ---
-  app.post("/api/stripe/webhook", express.raw({ type: 'application/json' }), (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    let event;
-
-    if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET || !sig) return res.sendStatus(400);
-
-    try {
-      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    } catch (err: any) {
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    if (event.type === 'invoice.paid') {
-      const invoice = event.data.object as Stripe.Invoice;
-      db.prepare("UPDATE placement_invoices SET status = 'paid', paid_at = CURRENT_TIMESTAMP, stripe_payment_status = 'paid' WHERE stripe_invoice_id = ?")
-        .run(invoice.id);
-    }
-
-    res.json({ received: true });
   });
 
   // Vite middleware for development

@@ -818,6 +818,13 @@ const EmployerDashboard = () => {
   const [startDate, setStartDate] = useState("");
   const [selectedJobMatches, setSelectedJobMatches] = useState<any>(null);
   const [matches, setMatches] = useState<any[]>([]);
+  
+  // Profile save feedback states
+  const [profileSuccess, setProfileSuccess] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  
+  // Invoice PayPal payment state
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<any>(null);
 
   const fetchData = async () => {
     try {
@@ -831,7 +838,15 @@ const EmployerDashboard = () => {
       if (empRes.ok) {
         const empData = await empRes.json();
         setEmployer(empData);
-        if (empData) setProfile(empData);
+        if (empData) {
+          setProfile({
+            company_name: empData.company_name || "",
+            contact_name: empData.contact_name || "",
+            phone: empData.phone || "",
+            parish: empData.parish || ALLOWED_PARISHES[0],
+            website: empData.website || ""
+          });
+        }
       }
       if (jobsRes.ok) {
         const data = await jobsRes.json();
@@ -871,12 +886,35 @@ const EmployerDashboard = () => {
 
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await fetch("/api/employers/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profile)
-    });
-    fetchData();
+    setProfileError("");
+    setProfileSuccess(false);
+
+    if (!profile.company_name.trim() || profile.company_name === "Pending Setup") {
+      setProfileError("Please enter a valid Company Name.");
+      return;
+    }
+    if (!profile.contact_name.trim() || profile.contact_name === "Pending Setup") {
+      setProfileError("Please enter a valid Contact Name.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/employers/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setProfileSuccess(true);
+        setTimeout(() => setProfileSuccess(false), 3000);
+        fetchData();
+      } else {
+        setProfileError(data.error || "Failed to save profile.");
+      }
+    } catch (err) {
+      setProfileError("A network error occurred. Please try again.");
+    }
   };
 
   const handleJobSubmit = async (e: FormEvent) => {
@@ -919,32 +957,75 @@ const EmployerDashboard = () => {
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Company Name</label>
                 <input 
                   type="text" 
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
                   value={profile.company_name}
                   onChange={e => setProfile({...profile, company_name: e.target.value})}
+                  required
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contact Name</label>
                 <input 
                   type="text" 
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
                   value={profile.contact_name}
                   onChange={e => setProfile({...profile, contact_name: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number</label>
+                <input 
+                  type="tel" 
+                  placeholder="(225) 555-0199"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
+                  value={profile.phone}
+                  onChange={e => setProfile({...profile, phone: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Website (Optional)</label>
+                <input 
+                  type="url" 
+                  placeholder="https://example.com"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
+                  value={profile.website}
+                  onChange={e => setProfile({...profile, website: e.target.value})}
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Parish</label>
                 <select 
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
                   value={profile.parish}
                   onChange={e => setProfile({...profile, parish: e.target.value})}
                 >
                   {ALLOWED_PARISHES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
-              <button type="submit" className="w-full py-2 rounded-lg bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all">
-                Save Profile
+
+              {profileError && (
+                <div className="p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-100 font-medium leading-relaxed">
+                  {profileError}
+                </div>
+              )}
+
+              {profileSuccess && (
+                <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded-lg border border-emerald-100 font-medium leading-relaxed">
+                  Profile Saved Successfully!
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                className={cn(
+                  "w-full py-2 rounded-lg font-bold transition-all shadow-sm cursor-pointer text-center block",
+                  profileSuccess 
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700" 
+                    : "bg-slate-900 hover:bg-slate-800 text-white"
+                )}
+              >
+                {profileSuccess ? "✓ Saved!" : "Save Profile"}
               </button>
             </form>
           </div>
@@ -1165,6 +1246,7 @@ const EmployerDashboard = () => {
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Job</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Amount</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1180,11 +1262,24 @@ const EmployerDashboard = () => {
                           {inv.status}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        {inv.status !== 'paid' ? (
+                          <button 
+                            onClick={() => setSelectedInvoiceForPayment(inv)}
+                            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                          >
+                            <DollarSign className="w-3.5 h-3.5" />
+                            Pay with PayPal
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium italic">Paid</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {invoices.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-slate-400">No invoices generated yet.</td>
+                      <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No invoices generated yet.</td>
                     </tr>
                   )}
                 </tbody>
@@ -1194,7 +1289,7 @@ const EmployerDashboard = () => {
         </div>
       </div>
 
-      {/* Hire Modal */}
+      {/* Modals */}
       <AnimatePresence>
         {hiringIntro && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
@@ -1249,6 +1344,17 @@ const EmployerDashboard = () => {
               </form>
             </motion.div>
           </div>
+        )}
+
+        {selectedInvoiceForPayment && (
+          <PayPalPaymentModal 
+            invoice={selectedInvoiceForPayment} 
+            onClose={() => setSelectedInvoiceForPayment(null)} 
+            onSuccess={() => {
+              setSelectedInvoiceForPayment(null);
+              fetchData();
+            }}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -1612,39 +1718,229 @@ const AdminDashboard = () => {
 };
 
 
-const EmployerAgreement = () => (
-  <div className="pt-32 pb-24 max-w-3xl mx-auto px-4">
-    <div className="bg-white p-12 rounded-3xl shadow-xl border border-slate-200">
-      <h1 className="text-3xl font-bold mb-8">Employer Services Agreement</h1>
-      <div className="prose prose-slate max-w-none text-slate-600 space-y-6">
-        <p className="font-bold text-slate-900">Amber’s Healthcare – Employer Services Agreement</p>
-        <ol className="list-decimal pl-5 space-y-4">
-          <li><strong>Services:</strong> Amber’s Healthcare (“Company”) provides recruitment and candidate introduction services only. Company does not employ, supervise, direct, or control candidates and does not provide staffing or temporary labor services.</li>
-          <li><strong>Hiring Authority:</strong> All hiring decisions, compensation terms, schedules, supervision, and termination decisions are made solely by the Employer. Company has no authority over employment conditions.</li>
-          <li><strong>Placement Fee:</strong> Employer agrees to pay a flat placement fee of <strong>$4,500</strong> if Employer hires, engages, or contracts with a candidate introduced by Company within <strong>twelve (12) months</strong> of introduction.</li>
-          <li><strong>Fee Trigger:</strong> A placement fee is due upon Employer confirming a hire through the platform, or Employer engaging the candidate outside the platform after introduction.</li>
-          <li><strong>Payment Terms:</strong> Invoices are due upon receipt. Company may suspend services for non-payment.</li>
-          <li><strong>Non-Circumvention:</strong> Employer agrees not to bypass Company to avoid placement fees by engaging introduced candidates directly or indirectly.</li>
-          <li><strong>No Employment Relationship:</strong> Nothing in this Agreement creates an employment, joint employment, partnership, or agency relationship between Company and any candidate.</li>
-          <li><strong>Compliance:</strong> Employer agrees to comply with all applicable federal, state, and local employment and anti-discrimination laws.</li>
-          <li><strong>Limitation of Liability:</strong> Company makes no guarantee regarding candidate performance or retention.</li>
-          <li><strong>Governing Law:</strong> This Agreement is governed by the laws of the State of Louisiana.</li>
-        </ol>
-      </div>
-      <div className="mt-12 pt-8 border-t border-slate-100 flex justify-end">
-        <button 
-          onClick={async () => {
-            await fetch("/api/employers/accept-agreement", { method: "POST" });
-            window.history.back();
-          }}
-          className="px-8 py-4 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all"
-        >
-          I Accept the Agreement
+const PayPalPaymentModal = ({ invoice, onClose, onSuccess }: { invoice: any, onClose: () => void, onSuccess: () => void }) => {
+  const [config, setConfig] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [sdkReady, setSdkReady] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [paying, setPaying] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then(res => res.json())
+      .then(data => {
+        setConfig(data);
+        setLoading(false);
+        if (data.paypalClientId) {
+          loadPayPalSdk(data.paypalClientId);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load payment config", err);
+        setLoading(false);
+      });
+  }, [invoice]);
+
+  const loadPayPalSdk = (clientId: string) => {
+    const scriptId = "paypal-sdk-script";
+    const existingScript = document.getElementById(scriptId);
+
+    if (existingScript) {
+      setSdkReady(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
+    script.async = true;
+    script.onload = () => {
+      setSdkReady(true);
+    };
+    script.onerror = () => {
+      setErrorMessage("Failed to load PayPal Payment SDK.");
+    };
+    document.body.appendChild(script);
+  };
+
+  useEffect(() => {
+    if (sdkReady && config?.paypalClientId) {
+      // @ts-ignore
+      if (window.paypal) {
+        // @ts-ignore
+        window.paypal.Buttons({
+          createOrder: async () => {
+            try {
+              const res = await fetch("/api/paypal/create-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ invoiceId: invoice.id })
+              });
+              const order = await res.json();
+              if (order.id) {
+                return order.id;
+              } else {
+                throw new Error(order.error || "Failed to create PayPal order");
+              }
+            } catch (err: any) {
+              setErrorMessage(err.message);
+              throw err;
+            }
+          },
+          onApprove: async (data: any) => {
+            setPaying(true);
+            try {
+              const res = await fetch("/api/paypal/capture-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderID: data.orderID, invoiceId: invoice.id })
+              });
+              const capture = await res.json();
+              if (capture.status === "COMPLETED") {
+                onSuccess();
+              } else {
+                setErrorMessage(capture.error || "Payment capture failed");
+              }
+            } catch (err: any) {
+              setErrorMessage(err.message);
+            } finally {
+              setPaying(false);
+            }
+          },
+          onError: (err: any) => {
+            console.error("PayPal Error", err);
+            setErrorMessage("An error occurred with PayPal checkout.");
+          }
+        }).render("#paypal-button-container");
+      }
+    }
+  }, [sdkReady, config]);
+
+  const simulatePayment = async () => {
+    setPaying(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/simulate-pay`, {
+        method: "POST"
+      });
+      if (res.ok) {
+        onSuccess();
+      } else {
+        setErrorMessage("Failed to simulate payment.");
+      }
+    } catch (err) {
+      setErrorMessage("Network error during simulation.");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 overflow-y-auto max-h-[90vh]">
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors">
+          <X className="w-5 h-5 text-slate-400" />
         </button>
+
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Invoice Payment</h2>
+        <p className="text-slate-600 mb-6">Payment for placement invoice <span className="font-mono text-xs text-slate-500">#{invoice.id.substring(0, 8)}</span></p>
+
+        <div className="divide-y divide-slate-100 mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+          <div className="pb-3 flex justify-between">
+            <span className="text-slate-500 font-medium text-sm">Candidate</span>
+            <span className="font-bold text-slate-800 text-sm">{invoice.candidate_name}</span>
+          </div>
+          <div className="py-3 flex justify-between">
+            <span className="text-slate-500 font-medium text-sm">Job Position</span>
+            <span className="font-bold text-slate-800 text-sm">{invoice.job_title}</span>
+          </div>
+          <div className="pt-3 flex justify-between">
+            <span className="text-slate-800 font-bold">Total Placement Fee</span>
+            <span className="font-extrabold text-emerald-600 text-lg">${(invoice.amount_cents / 100).toLocaleString()}</span>
+          </div>
+        </div>
+
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 font-medium">
+            {errorMessage}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {config?.paypalClientId ? (
+              <div id="paypal-button-container" className="w-full" />
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 text-xs text-amber-800 leading-relaxed mb-4">
+                  <strong>PayPal Integration Status:</strong> Live/Sandbox PayPal credentials are not configured in your Environment Secrets. To receive real/sandbox payments into your PayPal Business account, set <code>PAYPAL_CLIENT_ID</code> and <code>PAYPAL_CLIENT_SECRET</code> in the Secrets tab.
+                </div>
+                <button
+                  onClick={simulatePayment}
+                  disabled={paying}
+                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {paying ? "Processing..." : "Simulate Successful PayPal Payment"}
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={onClose}
+              disabled={paying}
+              className="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all text-sm cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
+
+
+const EmployerAgreement = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="pt-32 pb-24 max-w-3xl mx-auto px-4">
+      <div className="bg-white p-12 rounded-3xl shadow-xl border border-slate-200">
+        <h1 className="text-3xl font-bold mb-8">Employer Services Agreement</h1>
+        <div className="prose prose-slate max-w-none text-slate-600 space-y-6">
+          <p className="font-bold text-slate-900">Amber’s Healthcare – Employer Services Agreement</p>
+          <ol className="list-decimal pl-5 space-y-4">
+            <li><strong>Services:</strong> Amber’s Healthcare (“Company”) provides recruitment and candidate introduction services only. Company does not employ, supervise, direct, or control candidates and does not provide staffing or temporary labor services.</li>
+            <li><strong>Hiring Authority:</strong> All hiring decisions, compensation terms, schedules, supervision, and termination decisions are made solely by the Employer. Company has no authority over employment conditions.</li>
+            <li><strong>Placement Fee:</strong> Employer agrees to pay a flat placement fee of <strong>$4,500</strong> if Employer hires, engages, or contracts with a candidate introduced by Company within <strong>twelve (12) months</strong> of introduction.</li>
+            <li><strong>Fee Trigger:</strong> A placement fee is due upon Employer confirming a hire through the platform, or Employer engaging the candidate outside the platform after introduction.</li>
+            <li><strong>Payment Terms:</strong> Invoices are due upon receipt. Company may suspend services for non-payment.</li>
+            <li><strong>Non-Circumvention:</strong> Employer agrees not to bypass Company to avoid placement fees by engaging introduced candidates directly or indirectly.</li>
+            <li><strong>No Employment Relationship:</strong> Nothing in this Agreement creates an employment, joint employment, partnership, or agency relationship between Company and any candidate.</li>
+            <li><strong>Compliance:</strong> Employer agrees to comply with all applicable federal, state, and local employment and anti-discrimination laws.</li>
+            <li><strong>Limitation of Liability:</strong> Company makes no guarantee regarding candidate performance or retention.</li>
+            <li><strong>Governing Law:</strong> This Agreement is governed by the laws of the State of Louisiana.</li>
+          </ol>
+        </div>
+        <div className="mt-12 pt-8 border-t border-slate-100 flex justify-end">
+          <button 
+            onClick={async () => {
+              await fetch("/api/employers/accept-agreement", { method: "POST" });
+              navigate("/employer");
+            }}
+            className="px-8 py-4 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer"
+          >
+            I Accept the Agreement
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const CandidateTerms = () => (
   <div className="pt-32 pb-24 max-w-3xl mx-auto px-4">
