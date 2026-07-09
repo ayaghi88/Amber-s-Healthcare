@@ -30,6 +30,60 @@ function logDebug(message: string) {
   console.log(message);
 }
 
+function getLevenshteinDistance(a: string, b: string): number {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function findUserByEmail(email: string) {
+  const norm = (email || "").trim().toLowerCase();
+  if (!norm) return null;
+  
+  // Try exact match first
+  const users = db.prepare("SELECT * FROM users").all() as any[];
+  const exact = users.find(u => (u.email || "").toLowerCase().trim() === norm);
+  if (exact) return exact;
+
+  // Try fuzzy match for typing mistakes (Levenshtein distance <= 2)
+  let bestMatch: any = null;
+  let bestDistance = Infinity;
+  for (const u of users) {
+    const uEmail = (u.email || "").toLowerCase().trim();
+    if (!uEmail) continue;
+    const distance = getLevenshteinDistance(norm, uEmail);
+    if (distance <= 2 && distance < bestDistance) {
+      bestDistance = distance;
+      bestMatch = u;
+    }
+  }
+
+  if (bestMatch) {
+    logDebug(`[FUZZY MATCH] Resolved input "${email}" to registered user "${bestMatch.email}" (Distance: ${bestDistance})`);
+    return bestMatch;
+  }
+
+  return null;
+}
+
 // Helper to dispatch email/SMS notifications and save them to SQLite table
 function dispatchNotification(recipientEmail: string | null, recipientPhone: string | null, type: 'email' | 'sms' | 'both', subject: string | null, message: string) {
   const id = uuidv4();
@@ -140,21 +194,27 @@ async function startServer() {
   // --- Auth Routes ---
   app.post("/api/auth/register", async (req, res, next) => {
     const { email, password, role } = req.body;
-    logDebug(`Register attempt: ${email} as ${role}`);
+    const normalizedEmail = (email || "").trim().toLowerCase();
+    logDebug(`Register attempt: ${normalizedEmail} as ${role}`);
     if (!['candidate', 'employer'].includes(role)) {
       logDebug(`Register failed: Invalid role - ${role}`);
       return res.status(400).json({ error: "Invalid role" });
     }
 
     try {
+      const existing = db.prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ?").get(normalizedEmail);
+      if (existing) {
+        return res.status(400).json({ error: "An account with this email address already exists." });
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
       const userId = uuidv4();
-      db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, email, hashedPassword, role);
+      db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, normalizedEmail, hashedPassword, role);
       
-      const token = jwt.sign({ id: userId, email, role }, JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign({ id: userId, email: normalizedEmail, role }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
-      logDebug(`Register success: ${email}`);
-      res.json({ token, user: { id: userId, email, role } });
+      logDebug(`Register success: ${normalizedEmail}`);
+      res.json({ token, user: { id: userId, email: normalizedEmail, role } });
     } catch (err: any) {
       logDebug(`Register error: ${err.message}`);
       res.status(400).json({ error: err.message });
@@ -165,7 +225,7 @@ async function startServer() {
     const { email, password } = req.body;
     logDebug(`Login attempt: ${email}`);
     try {
-      const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+      const user = findUserByEmail(email);
       if (!user) {
         logDebug(`Login failed: User not found - ${email}`);
         return res.status(401).json({ error: "Invalid credentials" });
@@ -179,7 +239,7 @@ async function startServer() {
 
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
-      logDebug(`Login success: ${email} (${user.role})`);
+      logDebug(`Login success: ${email} (resolved to: ${user.email}, role: ${user.role})`);
       res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (err: any) {
       logDebug(`Login error: ${err.message}`);
@@ -198,15 +258,15 @@ async function startServer() {
     }
 
     try {
-      const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+      const user = findUserByEmail(email);
       if (!user) {
         logDebug(`Reset password failed: User not found - ${email}`);
         return res.status(404).json({ error: "No account found with this email address." });
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      db.prepare("UPDATE users SET password = ? WHERE email = ?").run(hashedPassword, email);
-      logDebug(`Reset password success: ${email}`);
+      db.prepare("UPDATE users SET password = ? WHERE id = ?").run(hashedPassword, user.id);
+      logDebug(`Reset password success: ${email} (resolved to: ${user.email})`);
       res.json({ success: true, message: "Your password has been successfully reset. You can now log in with your new password!" });
     } catch (err: any) {
       logDebug(`Reset password error: ${err.message}`);
