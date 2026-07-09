@@ -1918,6 +1918,13 @@ const EmployerDashboard = () => {
                         </span>
                       </div>
                     )}
+
+                    {i.note && (
+                      <div className="mt-3 p-3 bg-emerald-50/50 border border-emerald-100/30 rounded-xl text-sm text-slate-700">
+                        <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">Candidate Application Cover Note:</p>
+                        <p className="italic">"{i.note}"</p>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-shrink-0 flex items-center">
                     {i.hire_id ? (
@@ -2213,6 +2220,16 @@ const JobBoard = () => {
   const [interestSuccess, setInterestSuccess] = useState<string | null>(null);
   const [interestError, setInterestError] = useState<string | null>(null);
 
+  // Profile data & Modal states
+  const [candidateProfile, setCandidateProfile] = useState<any>(null);
+  const [applyingJob, setApplyingJob] = useState<any>(null);
+  const [appForm, setAppForm] = useState({
+    note: "",
+    phone: "",
+    contact_preference: "Email",
+    interview_preference: "Virtual Video Call"
+  });
+
   const fetchJobsAndApplications = async () => {
     try {
       const res = await fetch("/api/jobs");
@@ -2227,6 +2244,12 @@ const JobBoard = () => {
           const appData = await appRes.json();
           setAppliedJobIds(appData);
         }
+
+        const profileRes = await fetch("/api/candidates/me");
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setCandidateProfile(profileData);
+        }
       }
     } catch (err) {
       console.error("Error fetching jobs/applications:", err);
@@ -2237,25 +2260,47 @@ const JobBoard = () => {
     fetchJobsAndApplications();
   }, [user]);
 
-  const handleExpressInterest = async (jobId: string) => {
+  const handleOpenApplicationModal = (job: any) => {
+    // If the candidate profile has not been completed, warn them!
+    if (!candidateProfile || candidateProfile.full_name === "Pending Setup" || !candidateProfile.full_name.trim()) {
+      setInterestError("Please complete your Candidate Profile first under 'Dashboard' before applying.");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setApplyingJob(job);
+    setAppForm({
+      note: "",
+      phone: candidateProfile?.phone || "",
+      contact_preference: candidateProfile?.contact_preference || "Email",
+      interview_preference: candidateProfile?.interview_preference || "Virtual Video Call"
+    });
+  };
+
+  const handleAppSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!applyingJob) return;
+
     setInterestError(null);
     setInterestSuccess(null);
-    setInterestLoading(jobId);
+    setInterestLoading(applyingJob.id);
 
     try {
-      const res = await fetch(`/api/jobs/${jobId}/interest`, {
-        method: "POST"
+      const res = await fetch(`/api/jobs/${applyingJob.id}/interest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appForm)
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setInterestSuccess(jobId);
-        setAppliedJobIds([...appliedJobIds, jobId]);
+        setInterestSuccess(applyingJob.id);
+        setAppliedJobIds([...appliedJobIds, applyingJob.id]);
+        setApplyingJob(null);
         setTimeout(() => setInterestSuccess(null), 4000);
       } else {
-        setInterestError(data.error || "Failed to express interest.");
+        setInterestError(data.error || "Failed to submit application.");
       }
     } catch (err) {
-      console.error("Interest error:", err);
+      console.error("Application submission error:", err);
       setInterestError("A network error occurred. Please try again.");
     } finally {
       setInterestLoading(null);
@@ -2269,8 +2314,9 @@ const JobBoard = () => {
         <p className="text-xl text-slate-600">Baton Rouge & surrounding areas only.</p>
         
         {interestError && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl font-semibold text-sm">
-            ⚠️ {interestError}
+          <div className="mt-4 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl font-semibold text-sm flex items-center justify-between">
+            <span>⚠️ {interestError}</span>
+            <button onClick={() => setInterestError(null)} className="text-red-500 font-bold ml-2">Dismiss</button>
           </div>
         )}
       </div>
@@ -2315,11 +2361,10 @@ const JobBoard = () => {
                   </button>
                 ) : user?.role === 'candidate' ? (
                   <button 
-                    onClick={() => handleExpressInterest(job.id)}
-                    disabled={interestLoading !== null}
+                    onClick={() => handleOpenApplicationModal(job)}
                     className="px-6 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer text-sm"
                   >
-                    {interestLoading === job.id ? "Submitting..." : "Express Interest"}
+                    Apply / Express Interest
                   </button>
                 ) : isOwnRole ? (
                   <Link 
@@ -2342,6 +2387,127 @@ const JobBoard = () => {
           </div>
         )}
       </div>
+
+      {/* Job Application Modal Form */}
+      <AnimatePresence>
+        {applyingJob && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setApplyingJob(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl p-8 overflow-y-auto max-h-[90vh] z-10"
+            >
+              <button 
+                onClick={() => setApplyingJob(null)}
+                className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+
+              <div className="mb-6">
+                <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 uppercase tracking-wider">
+                  Direct Job Application
+                </span>
+                <h2 className="text-2xl font-bold text-slate-900">{applyingJob.title}</h2>
+                <p className="text-slate-500 font-medium">{applyingJob.company_name} • {applyingJob.parish} Parish</p>
+              </div>
+
+              <form onSubmit={handleAppSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Why are you interested in this position? (Cover Note) <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <textarea 
+                    rows={4}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    placeholder="Briefly explain why you are interested in this remote role and what healthcare administrative or billing skills you offer..."
+                    value={appForm.note}
+                    onChange={e => setAppForm({...appForm, note: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Confirm Phone Number <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <input 
+                    type="tel"
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    placeholder="e.g. (225) 555-0199"
+                    value={appForm.phone}
+                    onChange={e => setAppForm({...appForm, phone: e.target.value})}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Preferred Contact Method
+                    </label>
+                    <select 
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      value={appForm.contact_preference}
+                      onChange={e => setAppForm({...appForm, contact_preference: e.target.value})}
+                    >
+                      <option value="Email">Email</option>
+                      <option value="Phone">Phone</option>
+                      <option value="Text">Text</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Interview Preference
+                    </label>
+                    <select 
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      value={appForm.interview_preference}
+                      onChange={e => setAppForm({...appForm, interview_preference: e.target.value})}
+                    >
+                      <option value="Virtual Video Call">Virtual Video Call</option>
+                      <option value="Phone Interview">Phone Interview</option>
+                      <option value="In-person Interview">In-person Interview</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl text-[11px] text-slate-500 space-y-1">
+                  <p className="font-bold text-slate-700">Submitting Profile Attachments:</p>
+                  <p>• Your saved Experience Summary and Specialties will automatically accompany this message.</p>
+                  <p>• Preferred preferences will update your permanent Candidate Profile.</p>
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setApplyingJob(null)}
+                    className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all text-sm cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={interestLoading !== null}
+                    className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {interestLoading ? "Submitting..." : "Submit Application"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

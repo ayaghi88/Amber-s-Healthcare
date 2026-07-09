@@ -555,13 +555,28 @@ async function startServer() {
       return res.status(400).json({ error: "Please complete your Candidate Profile first before applying." });
     }
     
+    const { note, phone, contact_preference, interview_preference } = req.body;
     const jobId = req.params.id;
     const id = uuidv4();
     try {
+      // If candidate updates or confirms their details, let's update their profile
+      if (phone || contact_preference || interview_preference) {
+        db.prepare(`
+          UPDATE candidates
+          SET 
+            phone = COALESCE(?, phone),
+            contact_preference = COALESCE(?, contact_preference),
+            interview_preference = COALESCE(?, interview_preference)
+          WHERE id = ?
+        `).run(phone || null, contact_preference || null, interview_preference || null, candidate.id);
+      }
+
+      const appNote = note && note.trim() ? note.trim() : 'Candidate expressed interest directly via the job board.';
+
       db.prepare(`
         INSERT INTO introductions (id, job_id, candidate_id, note)
-        VALUES (?, ?, ?, 'Candidate expressed interest directly via the job board.')
-      `).run(id, jobId, candidate.id);
+        VALUES (?, ?, ?, ?)
+      `).run(id, jobId, candidate.id, appNote);
       res.json({ success: true, message: "Interest expressed successfully!" });
     } catch (err: any) {
       if (err.message.includes("UNIQUE constraint failed")) {
