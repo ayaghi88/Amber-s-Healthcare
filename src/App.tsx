@@ -22,7 +22,9 @@ import {
   Mail,
   Phone,
   Calendar,
-  Sparkles
+  Sparkles,
+  Gift,
+  Edit
 } from "lucide-react";
 import { cn } from "./lib/utils";
 import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
@@ -67,7 +69,7 @@ const useAuth = () => {
 // --- Components ---
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -91,7 +93,12 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-8">
             <Link to="/jobs" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Find Jobs</Link>
             <Link to="/pricing" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pricing</Link>
-            {user ? (
+            <Link to="/refer" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors flex items-center gap-1.5">
+              <Gift className="w-4 h-4 text-emerald-600" /> Refer & Earn $100
+            </Link>
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            ) : user ? (
               <div className="flex items-center gap-4">
                 <Link 
                   to={user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/candidate'} 
@@ -135,7 +142,12 @@ const Navbar = () => {
             <div className="px-4 py-6 space-y-4">
               <Link to="/jobs" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Find Jobs</Link>
               <Link to="/pricing" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Pricing</Link>
-              {user ? (
+              <Link to="/refer" className="block text-lg font-medium text-slate-700 flex items-center gap-2" onClick={() => setIsOpen(false)}>
+                <Gift className="w-5 h-5 text-emerald-600" /> Refer & Earn $100
+              </Link>
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              ) : user ? (
                 <>
                   <Link 
                     to={user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/candidate'} 
@@ -185,6 +197,7 @@ const Footer = () => (
             <li><Link to="/jobs" className="hover:text-emerald-600 transition-colors">Find Jobs</Link></li>
             <li><Link to="/pricing" className="hover:text-emerald-600 transition-colors">Pricing</Link></li>
             <li><Link to="/service-area" className="hover:text-emerald-600 transition-colors">Service Area</Link></li>
+            <li><Link to="/refer" className="hover:text-emerald-600 transition-colors font-medium text-emerald-700 flex items-center gap-1">🎁 Refer & Earn $100</Link></li>
           </ul>
         </div>
 
@@ -431,6 +444,193 @@ const Pricing = () => (
   </div>
 );
 
+const ReferProgram = () => {
+  const [referrerName, setReferrerName] = useState("");
+  const [referrerEmail, setReferrerEmail] = useState("");
+  const [candidateName, setCandidateName] = useState("");
+  const [candidateEmail, setCandidateEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleReferralSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const res = await fetch("/api/referrals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referrer_name: referrerName,
+          referrer_email: referrerEmail,
+          candidate_name: candidateName,
+          candidate_email: candidateEmail
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMsg(data.message || "Referral submitted successfully!");
+        setReferrerName("");
+        setReferrerEmail("");
+        setCandidateName("");
+        setCandidateEmail("");
+      } else {
+        setErrorMsg(data.error || "Failed to submit referral.");
+      }
+    } catch (err) {
+      setErrorMsg("A network error occurred. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
+      <div className="text-center mb-12">
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full mb-4 uppercase tracking-wider">
+          🎁 Community Referral Program
+        </span>
+        <h1 className="text-4xl font-extrabold text-slate-900 mb-4">Refer a Colleague & Earn $100</h1>
+        <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+          Help us connect local healthcare administrative talent with top Baton Rouge region medical practices. You can refer as many people as you want!
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="lg:col-span-5 space-y-6 bg-slate-50 p-8 rounded-3xl border border-slate-100">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">How it Works</h2>
+          
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">1</div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">Submit the Referral</h3>
+                <p className="text-xs text-slate-500 mt-1">Provide your name and email plus your friend's contact details. No account is required.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">2</div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">Your Friend Gets Hired</h3>
+                <p className="text-xs text-slate-500 mt-1">We match them with remote or local roles in the Baton Rouge region and help them get placed.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">3</div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">Completes 2 Pay Periods</h3>
+                <p className="text-xs text-slate-500 mt-1">Once your friend works successfully for two full pay periods, the employer updates their status in our portal.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">4</div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">You Get Paid $100</h3>
+                <p className="text-xs text-slate-500 mt-1">We reach out to you directly and send you your $100 cash referral fee reward!</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-200">
+            <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider mb-2">Program Rules</h4>
+            <ul className="text-xs text-slate-500 space-y-1.5 list-disc pl-4">
+              <li>Referrers do NOT need to sign up as a candidate or employer.</li>
+              <li>There is absolutely NO LIMIT to the number of referrals or rewards you can earn.</li>
+              <li>The candidate must complete 2 full pay periods to qualify for payout.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="lg:col-span-7 bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Referral Submission Form</h2>
+          
+          <form onSubmit={handleReferralSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Your Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Jane Doe"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm"
+                  value={referrerName}
+                  onChange={e => setReferrerName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Your Email</label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="e.g. jane@example.com"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm"
+                  value={referrerEmail}
+                  onChange={e => setReferrerEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 my-6 pt-6">
+              <h3 className="font-bold text-slate-900 text-sm mb-4">Who are you referring?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Their Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="e.g. John Smith"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm"
+                    value={candidateName}
+                    onChange={e => setCandidateName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Their Email</label>
+                  <input 
+                    type="email" 
+                    required
+                    placeholder="e.g. john@example.com"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm"
+                    value={candidateEmail}
+                    onChange={e => setCandidateEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {successMsg && (
+              <div className="p-4 bg-emerald-50 text-emerald-800 text-sm rounded-xl border border-emerald-100 font-semibold flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 font-semibold">
+                ⚠️ {errorMsg}
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={submitting}
+              className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer"
+            >
+              {submitting ? "Submitting..." : <>🎁 Submit Referral & Earn $100</>}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ServiceArea = () => (
   <div className="pt-32 pb-24">
     <div className="max-w-4xl mx-auto px-4">
@@ -518,6 +718,7 @@ export default function App() {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/agreement" element={<EmployerAgreement />} />
               <Route path="/terms" element={<CandidateTerms />} />
+              <Route path="/refer" element={<ReferProgram />} />
             </Routes>
           </main>
           <Footer />
@@ -533,8 +734,22 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
+
+  // Reset Password Modal States
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/candidate');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -567,11 +782,39 @@ const Login = () => {
     }
   };
 
+  const handleResetPasswordSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setResetError("");
+    setResetSuccess("");
+    setResetLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail, newPassword: resetNewPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResetSuccess(data.message || "Your password has been reset successfully!");
+        setResetEmail("");
+        setResetNewPassword("");
+      } else {
+        setResetError(data.error || "Reset failed. Please verify your email.");
+      }
+    } catch (err) {
+      console.error("Password reset error:", err);
+      setResetError("A network or server error occurred. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="pt-32 pb-24 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
         <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Welcome Back</h2>
-        {error && <p className="text-red-600 mb-4 text-center text-sm">{error}</p>}
+        {error && <p className="text-red-600 mb-4 text-center text-sm font-semibold">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
@@ -584,7 +827,20 @@ const Login = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-slate-700">Password</label>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setResetError("");
+                  setResetSuccess("");
+                  setShowResetModal(true);
+                }}
+                className="text-xs text-emerald-600 hover:underline font-bold"
+              >
+                Forgot Login Info / Reset Password?
+              </button>
+            </div>
             <input 
               type="password" 
               required 
@@ -593,7 +849,7 @@ const Login = () => {
               onChange={e => setPassword(e.target.value)}
             />
           </div>
-          <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all">
+          <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer">
             Login
           </button>
         </form>
@@ -601,6 +857,63 @@ const Login = () => {
           Don't have an account? <Link to="/register" className="text-emerald-600 font-bold">Register</Link>
         </p>
       </div>
+
+      {/* Forgot Password / Reset Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 relative"
+          >
+            <button 
+              onClick={() => setShowResetModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">Reset Password</h3>
+            <p className="text-slate-500 text-sm mb-6">Enter your registered email address and define your new password below to reset your login credentials.</p>
+
+            {resetError && <div className="p-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl font-medium mb-4">{resetError}</div>}
+            {resetSuccess && <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm rounded-xl font-medium mb-4">{resetSuccess}</div>}
+
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  required 
+                  placeholder="name@example.com"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  value={resetEmail}
+                  onChange={e => setResetEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                <input 
+                  type="password" 
+                  required 
+                  minLength={6}
+                  placeholder="At least 6 characters"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  value={resetNewPassword}
+                  onChange={e => setResetNewPassword(e.target.value)}
+                />
+              </div>
+              <button 
+                type="submit" 
+                disabled={resetLoading}
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {resetLoading ? "Resetting..." : "Reset Password"}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
@@ -610,8 +923,14 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<'candidate' | 'employer'>('candidate');
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/candidate');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -706,7 +1025,9 @@ const CandidateDashboard = () => {
     phone: "",
     parish: ALLOWED_PARISHES[0],
     role_specialties: [] as string[],
-    experience_summary: ""
+    experience_summary: "",
+    contact_preference: "Email",
+    interview_preference: "Virtual Video Call"
   });
   const [success, setSuccess] = useState(false);
 
@@ -726,11 +1047,13 @@ const CandidateDashboard = () => {
               specialties = [];
             }
             setProfile({
-              full_name: data.full_name || "",
+              full_name: data.full_name === "Pending Setup" ? "" : (data.full_name || ""),
               phone: data.phone || "",
               parish: data.parish || ALLOWED_PARISHES[0],
               role_specialties: Array.isArray(specialties) ? specialties : [],
-              experience_summary: data.experience_summary || ""
+              experience_summary: data.experience_summary || "",
+              contact_preference: data.contact_preference || "Email",
+              interview_preference: data.interview_preference || "Virtual Video Call"
             });
           }
         })
@@ -757,13 +1080,19 @@ const CandidateDashboard = () => {
     }
   };
 
+  const isProfileComplete = candidate && candidate.full_name !== "Pending Setup" && candidate.full_name.trim().length > 0;
+
   return (
     <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
       <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
         <div className="p-8 bg-emerald-600 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">Candidate Profile</h1>
-            <p className="opacity-90">Complete your profile to be matched with local healthcare employers.</p>
+            <p className="opacity-90">
+              {isProfileComplete 
+                ? "Your profile is active, complete, and matching with local employers!" 
+                : "Complete your profile to be matched with local healthcare employers."}
+            </p>
           </div>
           {candidate?.accepted_terms_at ? (
             <span className="px-4 py-1.5 bg-emerald-700/50 border border-emerald-400 text-white rounded-full text-xs font-semibold">
@@ -792,12 +1121,20 @@ const CandidateDashboard = () => {
         )}
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          {isProfileComplete && (
+            <div className="p-4 bg-emerald-50 text-emerald-800 text-sm rounded-2xl border border-emerald-100 font-medium flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <span>Your profile is fully saved and active in our Baton Rouge talent pool. Keep your specialties and summary up to date to get matched!</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
               <input 
                 type="text" 
                 required 
+                placeholder="Enter your full name"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
                 value={profile.full_name}
                 onChange={e => setProfile({...profile, full_name: e.target.value})}
@@ -858,9 +1195,49 @@ const CandidateDashboard = () => {
             />
           </div>
 
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-6">
+            <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+              <span className="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg text-sm">✓</span> 
+              Inclusivity & Accommodation Preferences
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              We want to ensure everyone has a fair chance to succeed. If you struggle with standard interview techniques (such as sensory processing, verbal anxiety, or focus differences), declaring your preferences helps employers structure an inclusive assessment format for you.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Preferred Contact Method</label>
+                <select 
+                  className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  value={profile.contact_preference}
+                  onChange={e => setProfile({...profile, contact_preference: e.target.value})}
+                >
+                  <option value="Email">Email (Recommended)</option>
+                  <option value="Phone Call">Phone Call</option>
+                  <option value="Text Message / SMS">Text Message / SMS</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Preferred Interview Format</label>
+                <select 
+                  className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  value={profile.interview_preference}
+                  onChange={e => setProfile({...profile, interview_preference: e.target.value})}
+                >
+                  <option value="Virtual Video Call">Virtual Video Call (Standard)</option>
+                  <option value="Phone-Only Interview">Phone-Only Interview (No Video)</option>
+                  <option value="Written Questionnaire / Email Interview">Written Questionnaire / Email Interview (Inclusive option)</option>
+                  <option value="In-Person (Questions provided 48h in advance)">In-Person (Questions provided 48h in advance)</option>
+                  <option value="In-Person Interview">In-Person Interview (Standard)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between pt-4">
             <p className="text-sm text-slate-500 italic">"Candidates are never charged for placement."</p>
-            <button type="submit" className="px-8 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all">
+            <button type="submit" className="px-8 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer">
               {success ? "Saved!" : "Update Profile"}
             </button>
           </div>
@@ -888,6 +1265,10 @@ const EmployerDashboard = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [intros, setIntros] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [updatingReferralId, setUpdatingReferralId] = useState<string | null>(null);
+  const [referralStatus, setReferralStatus] = useState("pending");
+  const [referralNotes, setReferralNotes] = useState("");
   const [showJobForm, setShowJobForm] = useState(false);
   const [employer, setEmployer] = useState<any>(null);
   const [hiringIntro, setHiringIntro] = useState<any>(null);
@@ -904,11 +1285,12 @@ const EmployerDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [empRes, jobsRes, introsRes, invRes] = await Promise.all([
+      const [empRes, jobsRes, introsRes, invRes, refRes] = await Promise.all([
         fetch("/api/employers/me"),
         fetch("/api/employers/jobs"),
         fetch("/api/employers/introductions"),
-        fetch("/api/employers/invoices")
+        fetch("/api/employers/invoices"),
+        fetch("/api/referrals")
       ]);
       
       if (empRes.ok) {
@@ -916,8 +1298,8 @@ const EmployerDashboard = () => {
         setEmployer(empData);
         if (empData) {
           setProfile({
-            company_name: empData.company_name || "",
-            contact_name: empData.contact_name || "",
+            company_name: empData.company_name === "Pending Setup" ? "" : (empData.company_name || ""),
+            contact_name: empData.contact_name === "Pending Setup" ? "" : (empData.contact_name || ""),
             phone: empData.phone || "",
             parish: empData.parish || ALLOWED_PARISHES[0],
             website: empData.website || ""
@@ -935,6 +1317,10 @@ const EmployerDashboard = () => {
       if (invRes.ok) {
         const data = await invRes.json();
         if (Array.isArray(data)) setInvoices(data);
+      }
+      if (refRes && refRes.ok) {
+        const data = await refRes.json();
+        if (Array.isArray(data)) setReferrals(data);
       }
     } catch (err) {
       console.error("Failed to fetch employer data", err);
@@ -1037,6 +1423,12 @@ const EmployerDashboard = () => {
         <div className="lg:col-span-1 space-y-8">
           <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-200">
             <h2 className="text-xl font-bold mb-6">Company Profile</h2>
+            {employer && employer.company_name !== "Pending Setup" && (
+              <div className="p-3 bg-emerald-50 text-emerald-800 text-xs rounded-xl border border-emerald-100 font-medium flex items-center gap-1.5 mb-4">
+                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span>Company Profile Saved & Active</span>
+              </div>
+            )}
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Company Name</label>
@@ -1259,6 +1651,18 @@ const EmployerDashboard = () => {
                         </div>
                         <p className="text-xs text-slate-500 mb-3">{m.parish} Parish</p>
                         <p className="text-xs text-slate-600 line-clamp-2 mb-4 italic">"{m.experience_summary}"</p>
+                        
+                        {m.contact_preference && (
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            <span className="text-[10px] px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-semibold">
+                              Reach via: {m.contact_preference}
+                            </span>
+                            <span className="text-[10px] px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md font-semibold">
+                              Preferred Interview: {m.interview_preference}
+                            </span>
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
                           <ShieldCheck className="w-3 h-3" />
                           VERIFIED LOCAL
@@ -1293,8 +1697,19 @@ const EmployerDashboard = () => {
                       <h3 className="font-bold text-lg text-slate-900">{i.candidate_name}</h3>
                       <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-bold">INTRODUCED</span>
                     </div>
-                    <p className="text-sm text-slate-600 mb-4 font-medium">For: {i.job_title}</p>
-                    <p className="text-sm text-slate-500 line-clamp-2">{i.experience_summary}</p>
+                    <p className="text-sm text-slate-600 mb-2 font-medium">For: {i.job_title}</p>
+                    <p className="text-sm text-slate-500 mb-4">{i.experience_summary}</p>
+                    
+                    {i.contact_preference && (
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                        <span className="text-xs px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg font-semibold">
+                          Preferred Contact: {i.contact_preference}
+                        </span>
+                        <span className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg font-semibold">
+                          Preferred Interview Method: {i.interview_preference}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-shrink-0 flex items-center">
                     {i.hire_id ? (
@@ -1366,6 +1781,141 @@ const EmployerDashboard = () => {
                   {invoices.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No invoices generated yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Referral Rewards Tracker */}
+          <section>
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Referral Rewards Tracker</h2>
+                <p className="text-sm text-slate-500 mt-1">Manage submitted community referrals and update payout milestones.</p>
+              </div>
+              <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full">
+                $100 Referral Program
+              </span>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Referrer</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Referred Candidate</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Current Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Employer Notes</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {referrals.map(ref => (
+                    <tr key={ref.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900 text-sm">{ref.referrer_name}</div>
+                        <div className="text-xs text-slate-400 font-mono">{ref.referrer_email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900 text-sm">{ref.candidate_name}</div>
+                        <div className="text-xs text-slate-400 font-mono">{ref.candidate_email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider block text-center w-max", 
+                          ref.status === 'paid_completed' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
+                          ref.status === 'hired_waiting_pay_periods' ? "bg-indigo-50 text-indigo-700 border border-indigo-100" :
+                          ref.status === 'rejected' ? "bg-red-50 text-red-700 border border-red-100" :
+                          "bg-slate-50 text-slate-600 border border-slate-200"
+                        )}>
+                          {ref.status === 'paid_completed' ? "Paid (2+ Periods)" :
+                           ref.status === 'hired_waiting_pay_periods' ? "Hired (Waiting Payout)" :
+                           ref.status === 'rejected' ? "Rejected" : "Pending Match"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {updatingReferralId === ref.id ? (
+                          <input 
+                            type="text" 
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-xs w-full focus:border-indigo-500"
+                            value={referralNotes}
+                            onChange={e => setReferralNotes(e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-xs text-slate-500 italic truncate max-w-[160px]">
+                            {ref.notes || "No notes added yet."}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {updatingReferralId === ref.id ? (
+                          <div className="flex flex-col gap-1.5">
+                            <select 
+                              className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs outline-none"
+                              value={referralStatus}
+                              onChange={e => setReferralStatus(e.target.value)}
+                            >
+                              <option value="pending">Pending Match</option>
+                              <option value="hired_waiting_pay_periods">Hired &amp; Active</option>
+                              <option value="paid_completed">Completed 2 Pay Periods (Paid)</option>
+                              <option value="rejected">Rejected</option>
+                            </select>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch(`/api/referrals/${ref.id}/status`, {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ status: referralStatus, notes: referralNotes })
+                                    });
+                                    if (response.ok) {
+                                      setUpdatingReferralId(null);
+                                      // refresh
+                                      const refRes = await fetch("/api/referrals");
+                                      if (refRes.ok) {
+                                        const rData = await refRes.json();
+                                        setReferrals(rData);
+                                      }
+                                    }
+                                  } catch (err) {
+                                    console.error("Error updating referral status", err);
+                                  }
+                                }}
+                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-md transition-all cursor-pointer"
+                              >
+                                Save
+                              </button>
+                              <button 
+                                onClick={() => setUpdatingReferralId(null)}
+                                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] rounded-md transition-all cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => {
+                              setUpdatingReferralId(ref.id);
+                              setReferralStatus(ref.status || "pending");
+                              setReferralNotes(ref.notes || "");
+                            }}
+                            className="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-all flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            Update
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {referrals.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                        No community referrals have been submitted yet.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -1448,49 +1998,137 @@ const EmployerDashboard = () => {
 };
 
 const JobBoard = () => {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState<any[]>([]);
+  const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
+  const [interestLoading, setInterestLoading] = useState<string | null>(null);
+  const [interestSuccess, setInterestSuccess] = useState<string | null>(null);
+  const [interestError, setInterestError] = useState<string | null>(null);
+
+  const fetchJobsAndApplications = async () => {
+    try {
+      const res = await fetch("/api/jobs");
+      if (res.ok) {
+        const data = await res.json();
+        setJobs(data);
+      }
+
+      if (user?.role === 'candidate') {
+        const appRes = await fetch("/api/candidates/applications");
+        if (appRes.ok) {
+          const appData = await appRes.json();
+          setAppliedJobIds(appData);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching jobs/applications:", err);
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/jobs")
-      .then(res => res.json())
-      .then(data => setJobs(data));
-  }, []);
+    fetchJobsAndApplications();
+  }, [user]);
+
+  const handleExpressInterest = async (jobId: string) => {
+    setInterestError(null);
+    setInterestSuccess(null);
+    setInterestLoading(jobId);
+
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/interest`, {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setInterestSuccess(jobId);
+        setAppliedJobIds([...appliedJobIds, jobId]);
+        setTimeout(() => setInterestSuccess(null), 4000);
+      } else {
+        setInterestError(data.error || "Failed to express interest.");
+      }
+    } catch (err) {
+      console.error("Interest error:", err);
+      setInterestError("A network error occurred. Please try again.");
+    } finally {
+      setInterestLoading(null);
+    }
+  };
 
   return (
     <div className="pt-32 pb-24 max-w-5xl mx-auto px-4">
       <div className="mb-12">
         <h1 className="text-4xl font-extrabold text-slate-900 mb-4">Remote Admin Jobs</h1>
         <p className="text-xl text-slate-600">Baton Rouge & surrounding areas only.</p>
+        
+        {interestError && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl font-semibold text-sm">
+            ⚠️ {interestError}
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
-        {jobs.length > 0 ? jobs.map(job => (
-          <div key={job.id} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-200 transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 uppercase tracking-wider">
-                  {job.role_category}
-                </span>
-                <h2 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{job.title}</h2>
-                <p className="text-slate-500 font-medium">{job.company_name} • {job.parish} Parish</p>
+        {jobs.length > 0 ? jobs.map(job => {
+          const hasApplied = appliedJobIds.includes(job.id);
+          const isOwnRole = user?.role === 'employer' || user?.role === 'admin';
+
+          return (
+            <div key={job.id} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-200 transition-all group">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 uppercase tracking-wider">
+                    {job.role_category}
+                  </span>
+                  <h2 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{job.title}</h2>
+                  <p className="text-slate-500 font-medium">{job.company_name} • {job.parish} Parish</p>
+                </div>
+                <div className="flex items-center gap-2 text-emerald-600 font-bold">
+                  <ShieldCheck className="w-5 h-5" />
+                  <span>Remote</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                <ShieldCheck className="w-5 h-5" />
-                <span>Remote</span>
+              <p className="text-slate-600 mb-6 line-clamp-2">{job.description}</p>
+              <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                <div className="flex items-center gap-2 text-slate-400 text-sm">
+                  <MapPin className="w-4 h-4" />
+                  <span>Baton Rouge Region</span>
+                </div>
+
+                {interestSuccess === job.id ? (
+                  <span className="px-6 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm border border-emerald-100 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" /> Interest Expressed!
+                  </span>
+                ) : hasApplied ? (
+                  <button 
+                    disabled
+                    className="px-6 py-2 rounded-xl bg-emerald-100 text-emerald-700 font-bold text-sm cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    <CheckCircle className="w-4 h-4 text-emerald-600" /> Applied / Under Matching
+                  </button>
+                ) : user?.role === 'candidate' ? (
+                  <button 
+                    onClick={() => handleExpressInterest(job.id)}
+                    disabled={interestLoading !== null}
+                    className="px-6 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer text-sm"
+                  >
+                    {interestLoading === job.id ? "Submitting..." : "Express Interest"}
+                  </button>
+                ) : isOwnRole ? (
+                  <Link 
+                    to={user.role === 'admin' ? '/admin' : '/employer'} 
+                    className="px-6 py-2 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all text-sm"
+                  >
+                    Go to Dashboard &rarr;
+                  </Link>
+                ) : (
+                  <Link to="/register" className="px-6 py-2 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all text-sm">
+                    Apply Now
+                  </Link>
+                )}
               </div>
             </div>
-            <p className="text-slate-600 mb-6 line-clamp-2">{job.description}</p>
-            <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-              <div className="flex items-center gap-2 text-slate-400 text-sm">
-                <MapPin className="w-4 h-4" />
-                <span>Baton Rouge Region</span>
-              </div>
-              <Link to="/register" className="px-6 py-2 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all">
-                Apply Now
-              </Link>
-            </div>
-          </div>
-        )) : (
+          );
+        }) : (
           <div className="text-center py-24 bg-slate-50 rounded-3xl border border-dashed border-slate-300">
             <p className="text-slate-500">No active jobs at the moment. Check back soon!</p>
           </div>
@@ -2007,6 +2645,7 @@ const EmployerAgreement = () => {
             <li><strong>Payment Terms:</strong> Invoices are due upon receipt. Company may suspend services for non-payment.</li>
             <li><strong>Non-Circumvention:</strong> Employer agrees not to bypass Company to avoid placement fees by engaging introduced candidates directly or indirectly.</li>
             <li><strong>No Employment Relationship:</strong> Nothing in this Agreement creates an employment, joint employment, partnership, or agency relationship between Company and any candidate.</li>
+            <li><strong>$100 Referral Fee Program:</strong> Anyone may submit a referral for a potential candidate. If that referred candidate is actively hired by the Employer, the referrer receives a <strong>$100</strong> referral fee. This referral fee is paid only after the referred employee successfully completes <strong>two (2) full pay periods</strong>. Employer agrees to update the candidate's active employment status in their employer portal to ensure accurate and timely payout to the referrer. Referrers are not required to be registered employees or employers, and there is no limit to the number of referral fees a single referrer may earn.</li>
             <li><strong>Compliance:</strong> Employer agrees to comply with all applicable federal, state, and local employment and anti-discrimination laws.</li>
             <li><strong>Limitation of Liability:</strong> Company makes no guarantee regarding candidate performance or retention.</li>
             <li><strong>Governing Law:</strong> This Agreement is governed by the laws of the State of Louisiana.</li>
@@ -2051,6 +2690,7 @@ const CandidateTerms = () => {
           <ul className="list-disc pl-5 space-y-4">
             <li><strong>Services:</strong> Amber’s Healthcare provides recruitment, career guidance, and candidate introduction services to local clinics and practices.</li>
             <li><strong>No Charge:</strong> Candidates are never charged any fees for job placement, resume review, or introduction services.</li>
+            <li><strong>$100 Referral Fee Program:</strong> Anyone is welcome to refer healthcare administrative talent to our platform. If your referred candidate gets actively hired by an employer and completes <strong>two (2) full pay periods</strong>, the referrer receives a <strong>$100</strong> cash referral fee. The hiring employer will log this in their portal, and the referrer does not need to have a registered employee or employer account to collect. There is no limit to how many referral fees a single referrer can receive.</li>
             <li><strong>Employment Relationship:</strong> Amber’s Healthcare does not employ, manage, or direct candidates. Any employment offer or contract will be directly between you and the hiring employer.</li>
             <li><strong>No Placement Guarantee:</strong> While we actively match profiles with open listings, Amber’s Healthcare does not guarantee job placement or interviews.</li>
             <li><strong>Accurate Information:</strong> You agree to provide true, accurate, and up-to-date resume and specialty information.</li>

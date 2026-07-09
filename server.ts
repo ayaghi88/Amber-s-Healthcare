@@ -150,6 +150,33 @@ async function startServer() {
     }
   });
 
+  app.post("/api/auth/reset-password", async (req, res, next) => {
+    const { email, newPassword } = req.body;
+    logDebug(`Reset password attempt: ${email}`);
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    if (!newPassword || newPassword.trim().length < 6) {
+      return res.status(400).json({ error: "Please enter a valid new password (at least 6 characters)." });
+    }
+
+    try {
+      const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+      if (!user) {
+        logDebug(`Reset password failed: User not found - ${email}`);
+        return res.status(404).json({ error: "No account found with this email address." });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      db.prepare("UPDATE users SET password = ? WHERE email = ?").run(hashedPassword, email);
+      logDebug(`Reset password success: ${email}`);
+      res.json({ success: true, message: "Your password has been successfully reset. You can now log in with your new password!" });
+    } catch (err: any) {
+      logDebug(`Reset password error: ${err.message}`);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/auth/logout", (req, res) => {
     res.clearCookie("token");
     res.json({ success: true });
@@ -181,7 +208,7 @@ async function startServer() {
     const employer: any = db.prepare("SELECT id FROM employers WHERE user_id = ?").get(req.user.id);
     if (!employer) return res.json([]);
     const intros = db.prepare(`
-      SELECT i.*, c.full_name as candidate_name, c.experience_summary, j.title as job_title, h.id as hire_id
+      SELECT i.*, c.full_name as candidate_name, c.experience_summary, c.contact_preference, c.interview_preference, j.title as job_title, h.id as hire_id
       FROM introductions i
       JOIN candidates c ON i.candidate_id = c.id
       JOIN job_postings j ON i.job_id = j.id
@@ -254,19 +281,21 @@ async function startServer() {
   // --- Profile Routes ---
   app.post("/api/candidates/profile", authenticate, (req: any, res) => {
     if (req.user.role !== 'candidate') return res.status(403).json({ error: "Forbidden" });
-    const { full_name, phone, parish, role_specialties, experience_summary } = req.body;
+    const { full_name, phone, parish, role_specialties, experience_summary, contact_preference, interview_preference } = req.body;
     const id = uuidv4();
     try {
       db.prepare(`
-        INSERT INTO candidates (id, user_id, full_name, phone, parish, role_specialties, experience_summary)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO candidates (id, user_id, full_name, phone, parish, role_specialties, experience_summary, contact_preference, interview_preference)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
           full_name=excluded.full_name,
           phone=excluded.phone,
           parish=excluded.parish,
           role_specialties=excluded.role_specialties,
-          experience_summary=excluded.experience_summary
-      `).run(id, req.user.id, full_name, phone, parish, JSON.stringify(role_specialties), experience_summary);
+          experience_summary=excluded.experience_summary,
+          contact_preference=excluded.contact_preference,
+          interview_preference=excluded.interview_preference
+      `).run(id, req.user.id, full_name, phone, parish, JSON.stringify(role_specialties), experience_summary, contact_preference, interview_preference);
       res.json({ success: true });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -454,6 +483,90 @@ async function startServer() {
   app.get("/api/jobs", (req, res) => {
     const jobs = db.prepare("SELECT j.*, e.company_name FROM job_postings j JOIN employers e ON j.employer_id = e.id WHERE j.status = 'open'").all();
     res.json(jobs);
+  });
+
+  app.post("/api/jobs/:id/interest", authenticate, (req: any, res) => {
+    if (req.user.role !== 'candidate') {
+      return res.status(403).json({ error: "Only candidates can express interest in jobs." });
+    }
+    const candidate = db.prepare("SELECT * FROM candidates WHERE user_id = ?").get(req.user.id) as any;
+    if (!candidate) {
+      return res.status(400).json({ error: "Please complete your Candidate Profile first before applying." });
+    }
+    
+    const jobId = req.params.id;
+    const id = uuidv4();
+    try {
+      db.prepare(`
+        INSERT INTO introductions (id, job_id, candidate_id, note)
+        VALUES (?, ?, ?, 'Candidate expressed interest directly via the job board.')
+      `).run(id, jobId, candidate.id);
+      res.json({ success: true, message: "Interest expressed successfully!" });
+    } catch (err: any) {
+      if (err.message.includes("UNIQUE constraint failed")) {
+        return res.json({ success: true, message: "You have already expressed interest in this job." });
+      }
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/candidates/applications", authenticate, (req: any, res) => {
+    if (req.user.role !== 'candidate') return res.status(403).json({ error: "Forbidden" });
+    const candidate = db.prepare("SELECT id FROM candidates WHERE user_id = ?").get(req.user.id) as any;
+    if (!candidate) return res.json([]);
+    const applications = db.prepare("SELECT job_id FROM introductions WHERE candidate_id = ?").all(candidate.id) as any[];
+    res.json(applications.map(app => app.job_id));
+  });
+
+  // --- Referral Routes ---
+  app.post("/api/referrals", (req, res) => {
+    const { referrer_name, referrer_email, candidate_name, candidate_email } = req.body;
+    if (!referrer_name || !referrer_email || !candidate_name || !candidate_email) {
+      return res.status(400).json({ error: "All fields are required (your name & email, and the candidate's name & email)." });
+    }
+    const id = uuidv4();
+    try {
+      db.prepare(`
+        INSERT INTO referrals (id, referrer_name, referrer_email, candidate_name, candidate_email, status, employer_notes)
+        VALUES (?, ?, ?, ?, ?, 'pending', '')
+      `).run(id, referrer_name.trim(), referrer_email.trim(), candidate_name.trim(), candidate_email.trim());
+      res.json({ success: true, message: "Referral submitted successfully! Thank you for referring healthcare talent to our Baton Rouge community." });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/referrals", authenticate, (req: any, res) => {
+    if (req.user.role !== 'employer' && req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    try {
+      const referrals = db.prepare("SELECT * FROM referrals ORDER BY created_at DESC").all();
+      res.json(referrals);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/referrals/:id/status", authenticate, (req: any, res) => {
+    if (req.user.role !== 'employer' && req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const { status, employer_notes } = req.body;
+    const allowedStatuses = ['pending', 'hired_waiting_pay_periods', 'paid_completed', 'rejected'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid referral status." });
+    }
+    try {
+      db.prepare(`
+        UPDATE referrals
+        SET status = ?, employer_notes = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(status, employer_notes || "", req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   // --- Admin Routes ---

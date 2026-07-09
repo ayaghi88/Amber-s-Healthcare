@@ -119,13 +119,33 @@ db.exec(`
     FOREIGN KEY (job_id) REFERENCES job_postings(id),
     FOREIGN KEY (introduction_id) REFERENCES introductions(id)
   );
+
+  CREATE TABLE IF NOT EXISTS referrals (
+    id TEXT PRIMARY KEY,
+    referrer_name TEXT NOT NULL,
+    referrer_email TEXT NOT NULL,
+    candidate_name TEXT NOT NULL,
+    candidate_email TEXT NOT NULL,
+    status TEXT CHECK(status IN ('pending', 'hired_waiting_pay_periods', 'paid_completed', 'rejected')) DEFAULT 'pending',
+    employer_notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 try {
   db.exec("ALTER TABLE candidates ADD COLUMN accepted_terms_at DATETIME;");
   console.log("Successfully ran migration: Added accepted_terms_at to candidates");
-} catch (e) {
-  // Column already exists, ignore
-}
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE candidates ADD COLUMN contact_preference TEXT;");
+  console.log("Successfully ran migration: Added contact_preference to candidates");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE candidates ADD COLUMN interview_preference TEXT;");
+  console.log("Successfully ran migration: Added interview_preference to candidates");
+} catch (e) {}
 
 export default db;
