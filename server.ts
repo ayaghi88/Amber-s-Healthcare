@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 /**
  * CHANGES COMMITTED:
  * - Added `/api/admin/employers` and `/api/admin/jobs` admin-only secure REST API endpoints.
@@ -84,6 +85,16 @@ function findUserByEmail(email: string) {
   return null;
 }
 
+// Email transport using nodemailer
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+  port: parseInt(process.env.SMTP_PORT || '587', 10),
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
 // Helper to dispatch email/SMS notifications and save them to SQLite table
 function dispatchNotification(recipientEmail: string | null, recipientPhone: string | null, type: 'email' | 'sms' | 'both', subject: string | null, message: string) {
   const id = uuidv4();
@@ -92,8 +103,26 @@ function dispatchNotification(recipientEmail: string | null, recipientPhone: str
       INSERT INTO notifications (id, recipient_email, recipient_phone, type, subject, message, status)
       VALUES (?, ?, ?, ?, ?, ?, 'sent')
     `).run(id, recipientEmail, recipientPhone, type, subject, message);
-    logDebug(`[NOTIFICATION] SENT | Type: ${type} | To Email: ${recipientEmail || 'N/A'} | To Phone: ${recipientPhone || 'N/A'} | Subject: ${subject || 'N/A'} | Message: ${message.replace(/\n/g, ' ')}`);
+    logDebug(`[NOTIFICATION] LOGGED | Type: ${type} | To Email: ${recipientEmail || 'N/A'} | To Phone: ${recipientPhone || 'N/A'}`);
     backupDatabase();
+    
+    // Actually send email if required
+    if ((type === 'email' || type === 'both') && recipientEmail) {
+      if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+        transporter.sendMail({
+          from: '"Ambers Healthcare" <noreply@ambershealthcare.com>',
+          to: recipientEmail,
+          subject: subject || "Notification from Amber's Healthcare",
+          text: message
+        }).then(info => {
+          logDebug(`[EMAIL] Successfully sent to ${recipientEmail}: ${info.messageId}`);
+        }).catch(err => {
+          logDebug(`[EMAIL] Failed to send to ${recipientEmail}: ${err.message}`);
+        });
+      } else {
+        logDebug(`[EMAIL] SMTP credentials not fully configured. Email was logged but not sent over SMTP.`);
+      }
+    }
   } catch (err: any) {
     logDebug(`[NOTIFICATION] FAILED to save notification: ${err.message}`);
   }
@@ -129,6 +158,8 @@ async function getPayPalAccessToken() {
   const data = await response.json() as any;
   return data.access_token;
 }
+
+
 
 async function startServer() {
   const app = express();
@@ -700,6 +731,11 @@ async function startServer() {
             const adminMsg = `Admin Alert:\nCandidate **${candidate.full_name}** has applied directly to job posting **${job.title}** at **${job.company_name}**.\n\nCover Note: "${appNote}"`;
             dispatchNotification(admin.email, null, 'email', adminSubject, adminMsg);
           }
+          
+          // 3. Notify Candidate via Email
+          const candSubject = `Application Submitted: ${job.title} at ${job.company_name}`;
+          const candMsg = `Hi ${candidate.full_name},\n\nYou have successfully expressed interest in the position of **${job.title}** at **${job.company_name}**.\n\nYour profile has been shared with the employer. We will notify you when they review your application.`;
+          dispatchNotification(candUser.email, candidate.phone, 'email', candSubject, candMsg);
         }
       } catch (notifyErr: any) {
         logDebug(`Error sending application notifications: ${notifyErr.message}`);
