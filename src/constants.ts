@@ -16,7 +16,8 @@ export const ROLE_CATEGORIES = [
   "Insurance Verification",
   "Scheduling Coordinator",
   "Front Desk (remote)",
-  "Care Coordinator (administrative)"
+  "Care Coordinator (administrative)",
+  "Marketing Associate"
 ];
 
 export const PRICING = {

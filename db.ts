@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 let dbPath = process.env.DATABASE_PATH || 'ambers_healthcare.db';
 
@@ -147,5 +149,207 @@ try {
   db.exec("ALTER TABLE candidates ADD COLUMN interview_preference TEXT;");
   console.log("Successfully ran migration: Added interview_preference to candidates");
 } catch (e) {}
+
+// --- Workspace JSON Backup & Restore System ---
+const backupPath = path.join(process.cwd(), 'db_backup.json');
+
+export function backupDatabase() {
+  try {
+    const backupData = {
+      users: db.prepare("SELECT * FROM users").all(),
+      candidates: db.prepare("SELECT * FROM candidates").all(),
+      employers: db.prepare("SELECT * FROM employers").all(),
+      job_postings: db.prepare("SELECT * FROM job_postings").all(),
+      referrals: db.prepare("SELECT * FROM referrals").all(),
+      introductions: db.prepare("SELECT * FROM introductions").all(),
+      hire_confirmations: db.prepare("SELECT * FROM hire_confirmations").all(),
+      placement_invoices: db.prepare("SELECT * FROM placement_invoices").all()
+    };
+    fs.writeFileSync(backupPath, JSON.stringify(backupData, null, 2), 'utf-8');
+    console.log("Database successfully backed up to db_backup.json");
+  } catch (err: any) {
+    console.error("Failed to back up database:", err.message);
+  }
+}
+
+export function restoreDatabase() {
+  if (!fs.existsSync(backupPath)) {
+    console.log("No backup file found at", backupPath);
+    return false;
+  }
+  try {
+    const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf-8'));
+    
+    db.exec("PRAGMA foreign_keys = OFF;");
+    
+    // Restore users
+    if (backupData.users) {
+      db.prepare("DELETE FROM users").run();
+      const insertUser = db.prepare("INSERT INTO users (id, email, password, role, created_at) VALUES (?, ?, ?, ?, ?)");
+      for (const u of backupData.users) {
+        insertUser.run(u.id, u.email, u.password, u.role, u.created_at);
+      }
+    }
+    
+    // Restore candidates
+    if (backupData.candidates) {
+      db.prepare("DELETE FROM candidates").run();
+      const insertCandidate = db.prepare(`
+        INSERT INTO candidates (id, user_id, full_name, phone, parish, role_specialties, experience_summary, resume_url, status, accepted_terms_at, contact_preference, interview_preference)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const c of backupData.candidates) {
+        insertCandidate.run(
+          c.id, c.user_id, c.full_name, c.phone, c.parish, c.role_specialties,
+          c.experience_summary, c.resume_url, c.status, c.accepted_terms_at,
+          c.contact_preference, c.interview_preference
+        );
+      }
+    }
+    
+    // Restore employers
+    if (backupData.employers) {
+      db.prepare("DELETE FROM employers").run();
+      const insertEmployer = db.prepare(`
+        INSERT INTO employers (id, user_id, company_name, contact_name, phone, parish, website, stripe_customer_id, accepted_agreement_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const e of backupData.employers) {
+        insertEmployer.run(
+          e.id, e.user_id, e.company_name, e.contact_name, e.phone, e.parish,
+          e.website, e.stripe_customer_id, e.accepted_agreement_at
+        );
+      }
+    }
+    
+    // Restore job_postings
+    if (backupData.job_postings) {
+      db.prepare("DELETE FROM job_postings").run();
+      const insertJob = db.prepare(`
+        INSERT INTO job_postings (id, employer_id, title, description, parish, role_category, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const j of backupData.job_postings) {
+        insertJob.run(j.id, j.employer_id, j.title, j.description, j.parish, j.role_category, j.status, j.created_at);
+      }
+    }
+    
+    // Restore referrals
+    if (backupData.referrals) {
+      db.prepare("DELETE FROM referrals").run();
+      const insertReferral = db.prepare(`
+        INSERT INTO referrals (id, referrer_name, referrer_email, candidate_name, candidate_email, status, employer_notes, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const r of backupData.referrals) {
+        insertReferral.run(r.id, r.referrer_name, r.referrer_email, r.candidate_name, r.candidate_email, r.status, r.employer_notes, r.created_at, r.updated_at);
+      }
+    }
+
+    // Restore introductions
+    if (backupData.introductions) {
+      db.prepare("DELETE FROM introductions").run();
+      const insertIntro = db.prepare(`
+        INSERT INTO introductions (id, job_id, candidate_id, introduced_at, note)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      for (const i of backupData.introductions) {
+        insertIntro.run(i.id, i.job_id, i.candidate_id, i.introduced_at, i.note);
+      }
+    }
+
+    // Restore hire_confirmations
+    if (backupData.hire_confirmations) {
+      db.prepare("DELETE FROM hire_confirmations").run();
+      const insertHire = db.prepare(`
+        INSERT INTO hire_confirmations (id, introduction_id, start_date, confirmed_at)
+        VALUES (?, ?, ?, ?)
+      `);
+      for (const h of backupData.hire_confirmations) {
+        insertHire.run(h.id, h.introduction_id, h.start_date, h.confirmed_at);
+      }
+    }
+
+    // Restore placement_invoices
+    if (backupData.placement_invoices) {
+      db.prepare("DELETE FROM placement_invoices").run();
+      const insertInvoice = db.prepare(`
+        INSERT INTO placement_invoices (id, employer_id, candidate_id, job_id, introduction_id, amount_cents, currency, status, stripe_invoice_id, stripe_payment_status, created_at, paid_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const p of backupData.placement_invoices) {
+        insertInvoice.run(p.id, p.employer_id, p.candidate_id, p.job_id, p.introduction_id, p.amount_cents, p.currency, p.status, p.stripe_invoice_id, p.stripe_payment_status, p.created_at, p.paid_at);
+      }
+    }
+    
+    db.exec("PRAGMA foreign_keys = ON;");
+    console.log("Database successfully restored from db_backup.json");
+    return true;
+  } catch (err: any) {
+    console.error("Failed to restore database:", err.message);
+    db.exec("PRAGMA foreign_keys = ON;");
+    return false;
+  }
+}
+
+// Try restoring from backup first
+const didRestore = restoreDatabase();
+
+// If database has no job postings after restore attempt, seed the requested Marketing Associate job posting
+const jobCount = db.prepare("SELECT COUNT(*) as count FROM job_postings").get().count;
+if (jobCount === 0) {
+  try {
+    const employerEmail = "employer@ambershealthcare.com";
+    let employerUser = db.prepare("SELECT * FROM users WHERE email = ?").get(employerEmail);
+    
+    // Create employer user if it doesn't exist
+    if (!employerUser) {
+      const hashedPassword = bcrypt.hashSync("employer123", 10);
+      const userId = uuidv4();
+      db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, employerEmail, hashedPassword, "employer");
+      employerUser = { id: userId, email: employerEmail, role: "employer" };
+    }
+    
+    // Create employer profile if it doesn't exist
+    let employerProfile = db.prepare("SELECT * FROM employers WHERE user_id = ?").get(employerUser.id);
+    if (!employerProfile) {
+      const profileId = uuidv4();
+      db.prepare(`
+        INSERT INTO employers (id, user_id, company_name, contact_name, phone, parish, website, accepted_agreement_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(
+        profileId,
+        employerUser.id,
+        "Amber's Healthcare Services",
+        "Amber Samantha Yaghi",
+        "225-555-0199",
+        "East Baton Rouge",
+        "https://ambershealthcare.com"
+      );
+      employerProfile = { id: profileId };
+    }
+    
+    // Insert Marketing Associate job posting
+    const jobId = uuidv4();
+    db.prepare(`
+      INSERT INTO job_postings (id, employer_id, title, description, parish, role_category, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'open')
+    `).run(
+      jobId,
+      employerProfile.id,
+      "Marketing Associate",
+      "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare Services in East Baton Rouge. The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Prior experience in professional services or healthcare marketing is a plus.",
+      "East Baton Rouge",
+      "Marketing Associate"
+    );
+    
+    console.log("Successfully seeded Marketing Associate job posting for Amber's Healthcare Services.");
+    
+    // Save to backup file
+    backupDatabase();
+  } catch (err: any) {
+    console.error("Failed to seed initial Marketing Associate job:", err.message);
+  }
+}
 
 export default db;

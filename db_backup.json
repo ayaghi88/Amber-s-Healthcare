@@ -1,0 +1,82 @@
+{
+  "users": [
+    {
+      "id": "2503886d-8c33-46f4-bd59-e0a9989fee7b",
+      "email": "amber@ambershealthcare.com",
+      "password": "$2b$10$xpnaJvoelp4Py7xZsDnufOHolHZzfMdvL5Cc8dJBWhHRiMQl7yNZ.",
+      "role": "admin",
+      "created_at": "2026-07-09 18:53:48"
+    },
+    {
+      "id": "91a33d22-51da-40c4-9245-9cf72894bf6e",
+      "email": "ambersamanthayaghi@gmail.com",
+      "password": "$2b$10$GvUAEUpqSQyByODzakNhl.4H8SiSjeWt/F02aDw3Uysg47GNTcC8G",
+      "role": "candidate",
+      "created_at": "2026-07-09 19:00:06"
+    },
+    {
+      "id": "cc10050c-14e6-438b-8f0e-355e1b796932",
+      "email": "employer@ambershealthcare.com",
+      "password": "$2b$10$d7fKjxdGraH.isUII4njO.9a9lMHqaPlYM0mXmDeWKGFBKU7L5O9O",
+      "role": "employer",
+      "created_at": "2026-07-09 19:56:04"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "4d0f761f-bb48-4896-abc5-d20779260d21",
+      "user_id": "91a33d22-51da-40c4-9245-9cf72894bf6e",
+      "full_name": "Pending Setup",
+      "phone": "",
+      "parish": "East Baton Rouge",
+      "role_specialties": "[]",
+      "experience_summary": "",
+      "resume_url": null,
+      "status": "active",
+      "accepted_terms_at": "2026-07-09 19:07:49",
+      "contact_preference": null,
+      "interview_preference": null
+    }
+  ],
+  "employers": [
+    {
+      "id": "7b8d443b-ce3e-4fd8-a220-3d19997924ba",
+      "user_id": "cc10050c-14e6-438b-8f0e-355e1b796932",
+      "company_name": "Amber's Healthcare Services",
+      "contact_name": "Amber Samantha Yaghi",
+      "phone": "225-555-0199",
+      "parish": "East Baton Rouge",
+      "website": "https://ambershealthcare.com",
+      "stripe_customer_id": null,
+      "accepted_agreement_at": "2026-07-09 19:56:04"
+    }
+  ],
+  "job_postings": [
+    {
+      "id": "d32416ab-6f40-4874-a2c1-6ded2425cd7c",
+      "employer_id": "7b8d443b-ce3e-4fd8-a220-3d19997924ba",
+      "title": "Marketing Associate",
+      "description": "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare Services in East Baton Rouge. The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Prior experience in professional services or healthcare marketing is a plus.",
+      "parish": "East Baton Rouge",
+      "role_category": "Marketing Associate",
+      "status": "open",
+      "created_at": "2026-07-09 19:56:04"
+    }
+  ],
+  "referrals": [
+    {
+      "id": "8ed1df6c-064c-4dc3-ac4f-480f073338b7",
+      "referrer_name": "Bee Jay",
+      "referrer_email": "contact@amberyaghi.org",
+      "candidate_name": "Laura Yaghi",
+      "candidate_email": "lyaghi@live.com",
+      "status": "pending",
+      "employer_notes": "",
+      "created_at": "2026-07-09 18:59:38",
+      "updated_at": "2026-07-09 18:59:38"
+    }
+  ],
+  "introductions": [],
+  "hire_confirmations": [],
+  "placement_invoices": []
+}

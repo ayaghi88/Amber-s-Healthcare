@@ -10,7 +10,7 @@ import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
-import db from "./db.ts";
+import db, { backupDatabase } from "./db.ts";
 import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
@@ -69,6 +69,22 @@ async function startServer() {
 
   app.use(express.json());
   app.use(cookieParser());
+
+  // Auto-backup Database on any successful state modification (POST, PUT, PATCH, DELETE)
+  app.use((req, res, next) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      res.on('finish', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            backupDatabase();
+          } catch (err: any) {
+            console.error("Auto-backup failed:", err.message);
+          }
+        }
+      });
+    }
+    next();
+  });
 
   // Global request logging for debugging
   app.use((req, res, next) => {
