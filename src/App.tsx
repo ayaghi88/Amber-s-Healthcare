@@ -1045,6 +1045,7 @@ const CandidateDashboard = () => {
     interview_preference: "Virtual Video Call"
   });
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (user?.role === 'candidate') {
@@ -1078,6 +1079,25 @@ const CandidateDashboard = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError("");
+    
+    if (!profile.full_name.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!profile.phone.trim()) {
+      setError("Please enter your phone number.");
+      return;
+    }
+    if (profile.role_specialties.length === 0) {
+      setError("Please select at least one role specialty.");
+      return;
+    }
+    if (!profile.experience_summary.trim()) {
+      setError("Please provide an experience summary.");
+      return;
+    }
+
     const res = await fetch("/api/candidates/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1092,6 +1112,9 @@ const CandidateDashboard = () => {
         .then(data => {
           if (data) setCandidate(data);
         });
+    } else {
+      const data = await res.json();
+      setError(data.error || "Failed to save profile.");
     }
   };
 
@@ -1136,6 +1159,12 @@ const CandidateDashboard = () => {
         )}
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          {error && (
+            <div className="p-4 bg-red-50 text-red-700 text-sm rounded-2xl border border-red-100 font-medium">
+              ⚠️ {error}
+            </div>
+          )}
+
           {isProfileComplete && (
             <div className="p-4 bg-emerald-50 text-emerald-800 text-sm rounded-2xl border border-emerald-100 font-medium flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
@@ -1159,6 +1188,8 @@ const CandidateDashboard = () => {
               <label className="block text-sm font-bold text-slate-700 mb-2">Phone</label>
               <input 
                 type="tel" 
+                required
+                placeholder="e.g. (225) 555-0199"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
                 value={profile.phone}
                 onChange={e => setProfile({...profile, phone: e.target.value})}
@@ -1203,6 +1234,7 @@ const CandidateDashboard = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">Experience Summary</label>
             <textarea 
               rows={4}
+              required
               className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
               value={profile.experience_summary}
               onChange={e => setProfile({...profile, experience_summary: e.target.value})}
@@ -1373,6 +1405,10 @@ const EmployerDashboard = () => {
       setProfileError("Please enter a valid Contact Name.");
       return;
     }
+    if (!profile.phone || !profile.phone.trim()) {
+      setProfileError("Phone Number is required.");
+      return;
+    }
     const websiteTrimmed = profile.website.trim();
     if (!websiteTrimmed) {
       setProfileError("Website is required to verify legit employer accounts.");
@@ -1472,6 +1508,7 @@ const EmployerDashboard = () => {
                   className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
                   value={profile.phone}
                   onChange={e => setProfile({...profile, phone: e.target.value})}
+                  required
                 />
               </div>
               <div>
