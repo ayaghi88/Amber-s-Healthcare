@@ -1,8 +1,37 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
-const db = new Database('ambers_healthcare.db');
-console.log("Database initialized: ambers_healthcare.db");
+let dbPath = process.env.DATABASE_PATH || 'ambers_healthcare.db';
+
+// If running in production with a separate DATABASE_PATH, copy the initial seed database if the destination does not exist yet
+if (process.env.DATABASE_PATH && !fs.existsSync(dbPath)) {
+  const seedPath = path.join(process.cwd(), 'ambers_healthcare.db');
+  if (fs.existsSync(seedPath)) {
+    try {
+      // Ensure destination directory exists
+      const destDir = path.dirname(dbPath);
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+      }
+      fs.copyFileSync(seedPath, dbPath);
+      console.log(`Copied seed database from ${seedPath} to ${dbPath}`);
+    } catch (err: any) {
+      console.error(`Failed to copy seed database to ${dbPath}: ${err.message}. Falling back to local database.`);
+      dbPath = 'ambers_healthcare.db';
+    }
+  }
+}
+
+let db: any;
+try {
+  db = new Database(dbPath);
+} catch (err: any) {
+  console.error(`Failed to initialize database at ${dbPath}: ${err.message}. Falling back to default 'ambers_healthcare.db'`);
+  dbPath = 'ambers_healthcare.db';
+  db = new Database(dbPath);
+}
+console.log(`Database initialized at: ${dbPath}`);
 
 // Initialize tables
 db.exec(`
