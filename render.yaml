@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: amber-s-healthcare
+    env: docker
+    plan: starter
+    region: oregon
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/ambers_healthcare.db
+    disk:
+      name: amber-s-healthcare-data
+      mountPath: /var/data
+      sizeGB: 1
