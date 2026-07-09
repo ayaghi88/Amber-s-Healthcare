@@ -3,10 +3,6 @@
  * - Implemented Admin Control Center Tabbed UI to display and search Candidates, Employers, Job Postings, and Referrals.
  * - Added a dedicated Referral Management system allowing the administrator (amber@ambershealthcare.com) to view and update statuses.
  * - Created detailed modal popups for viewing employer information, contact persons, and agreement sign times.
- * - Created robust SQLite schemas and endpoints for managing email & text notification alert dispatches.
- * - Added a live "Alert Logs" tab to the Admin Dashboard for monitoring outbound notifications.
- * - Integrated "Matching & Onboarding Alerts" feed in the Candidate and Employer portals to display match history.
- * - Enhanced Introduction creator modal with loading feedback, duplicate prevention, and automated dual-channel notifications.
  */
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
 import React, { useState, useEffect, createContext, useContext, FormEvent } from "react";
