@@ -1,3 +1,9 @@
+/**
+ * CHANGES COMMITTED:
+ * - Implemented Admin Control Center Tabbed UI to display and search Candidates, Employers, Job Postings, and Referrals.
+ * - Added a dedicated Referral Management system allowing the administrator (amber@ambershealthcare.com) to view and update statuses.
+ * - Created detailed modal popups for viewing employer information, contact persons, and agreement sign times.
+ */
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
 import React, { useState, useEffect, createContext, useContext, FormEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -2341,21 +2347,42 @@ const JobBoard = () => {
 };
 
 const AdminDashboard = () => {
+  // Authentication context
   const { user } = useAuth();
+  
+  // Dashboard overall stats
   const [stats, setStats] = useState({ totalHires: 0, activeJobs: 0, totalRevenue: 0 });
+  
+  // Tab-specific list states
   const [candidates, setCandidates] = useState<any[]>([]);
+  const [employers, setEmployers] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  
+  // Search state and selected active tab
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTab, setSelectedTab] = useState<'candidates' | 'employers' | 'jobs' | 'referrals'>('candidates');
+  
+  // Modals & detail views states
+  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [selectedEmployer, setSelectedEmployer] = useState<any>(null);
+  const [selectedReferral, setSelectedReferral] = useState<any>(null);
   const [showIntroForm, setShowIntroForm] = useState(false);
   const [introData, setIntroData] = useState({ job_id: "", candidate_id: "", note: "" });
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  
+  // Referral updating state variables
+  const [referralStatus, setReferralStatus] = useState("pending");
+  const [referralNotes, setReferralNotes] = useState("");
 
+  // Fetch all administrative data from corresponding server endpoints
   const fetchData = async () => {
     try {
-      const [statsRes, candRes, jobsRes] = await Promise.all([
+      const [statsRes, candRes, jobsRes, empRes, refRes] = await Promise.all([
         fetch("/api/admin/stats"),
         fetch("/api/admin/candidates"),
-        fetch("/api/admin/jobs")
+        fetch("/api/admin/jobs"),
+        fetch("/api/admin/employers"),
+        fetch("/api/referrals")
       ]);
       
       if (statsRes.ok) setStats(await statsRes.json());
@@ -2367,17 +2394,27 @@ const AdminDashboard = () => {
         const data = await jobsRes.json();
         if (Array.isArray(data)) setJobs(data);
       }
+      if (empRes.ok) {
+        const data = await empRes.json();
+        if (Array.isArray(data)) setEmployers(data);
+      }
+      if (refRes.ok) {
+        const data = await refRes.json();
+        if (Array.isArray(data)) setReferrals(data);
+      }
     } catch (err) {
       console.error("Failed to fetch admin data", err);
     }
   };
 
+  // Re-fetch data on user change
   useEffect(() => {
     if (user?.role === 'admin') {
       fetchData();
     }
   }, [user]);
 
+  // Handle submitting candidate/job introduction
   const handleIntroSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const res = await fetch("/api/introductions", {
@@ -2392,40 +2429,114 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredCandidates = Array.isArray(candidates) ? candidates.filter(c => 
-    (c.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.parish || "").toLowerCase().includes(searchTerm.toLowerCase())
-  ) : [];
+  // Handle updating status & admin notes on a submitted referral
+  const handleReferralStatusUpdate = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedReferral) return;
 
+    try {
+      const res = await fetch(`/api/referrals/${selectedReferral.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: referralStatus,
+          employer_notes: referralNotes
+        })
+      });
+
+      if (res.ok) {
+        setSelectedReferral(null);
+        fetchData();
+      } else {
+        const errData = await res.json();
+        alert(errData.error || "Failed to update referral status.");
+      }
+    } catch (err) {
+      console.error("Error updating referral status", err);
+    }
+  };
+
+  // Helper to open referral update modal with initial state prefilled
+  const openReferralModal = (referral: any) => {
+    setSelectedReferral(referral);
+    setReferralStatus(referral.status || "pending");
+    setReferralNotes(referral.employer_notes || "");
+  };
+
+  // Perform client-side keyword search based on selected tab context
+  const getFilteredItems = () => {
+    const term = searchTerm.toLowerCase();
+    if (selectedTab === 'candidates') {
+      return candidates.filter(c => 
+        (c.full_name || "").toLowerCase().includes(term) ||
+        (c.parish || "").toLowerCase().includes(term) ||
+        (c.email || "").toLowerCase().includes(term)
+      );
+    } else if (selectedTab === 'employers') {
+      return employers.filter(e => 
+        (e.company_name || "").toLowerCase().includes(term) ||
+        (e.contact_name || "").toLowerCase().includes(term) ||
+        (e.email || "").toLowerCase().includes(term) ||
+        (e.parish || "").toLowerCase().includes(term)
+      );
+    } else if (selectedTab === 'jobs') {
+      return jobs.filter(j => 
+        (j.title || "").toLowerCase().includes(term) ||
+        (j.company_name || "").toLowerCase().includes(term) ||
+        (j.parish || "").toLowerCase().includes(term) ||
+        (j.role_category || "").toLowerCase().includes(term)
+      );
+    } else if (selectedTab === 'referrals') {
+      return referrals.filter(r => 
+        (r.referrer_name || "").toLowerCase().includes(term) ||
+        (r.referrer_email || "").toLowerCase().includes(term) ||
+        (r.candidate_name || "").toLowerCase().includes(term) ||
+        (r.candidate_email || "").toLowerCase().includes(term) ||
+        (r.status || "").toLowerCase().includes(term)
+      );
+    }
+    return [];
+  };
+
+  const filteredItems = getFilteredItems();
+
+  // Guard clause against non-admin users
   if (user?.role !== 'admin') return <div className="pt-32 text-center">Unauthorized</div>;
 
   return (
     <div className="pt-32 pb-24 max-w-7xl mx-auto px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      {/* Upper header section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Admin Control Center</h1>
+          <p className="text-slate-500 mt-1">Manage referrals, employers, candidates, and job board openings.</p>
+        </div>
         <button 
           onClick={() => setShowIntroForm(true)}
-          className="px-6 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all"
+          className="px-6 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2 cursor-pointer"
         >
-          Create Introduction
+          <Plus className="w-5 h-5" />
+          <span>Create Introduction</span>
         </button>
       </div>
 
+      {/* Admin stats metrics panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        <div className="p-8 bg-white rounded-3xl shadow-sm border border-slate-200">
+        <div className="p-8 bg-white rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-500 transition-colors">
           <h3 className="text-slate-500 font-bold uppercase text-xs mb-2">Total Hires</h3>
           <p className="text-4xl font-extrabold text-slate-900">{stats.totalHires}</p>
         </div>
-        <div className="p-8 bg-white rounded-3xl shadow-sm border border-slate-200">
+        <div className="p-8 bg-white rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-500 transition-colors">
           <h3 className="text-slate-500 font-bold uppercase text-xs mb-2">Active Jobs</h3>
           <p className="text-4xl font-extrabold text-slate-900">{stats.activeJobs}</p>
         </div>
-        <div className="p-8 bg-white rounded-3xl shadow-sm border border-slate-200">
+        <div className="p-8 bg-white rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-500 transition-colors">
           <h3 className="text-slate-500 font-bold uppercase text-xs mb-2">Total Revenue</h3>
           <p className="text-4xl font-extrabold text-emerald-600">${(stats.totalRevenue / 100).toLocaleString()}</p>
         </div>
       </div>
 
+      {/* Introduction creation form modal block */}
       {showIntroForm && (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -2433,16 +2544,18 @@ const AdminDashboard = () => {
           className="bg-white p-8 rounded-3xl shadow-xl border border-emerald-200 mb-12"
         >
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">New Introduction</h2>
-            <button onClick={() => setShowIntroForm(false)}><X className="w-6 h-6 text-slate-400" /></button>
+            <h2 className="text-xl font-bold text-slate-900">New Candidate-Job Introduction</h2>
+            <button onClick={() => setShowIntroForm(false)} className="p-2 hover:bg-slate-100 rounded-full">
+              <X className="w-6 h-6 text-slate-400" />
+            </button>
           </div>
           <form onSubmit={handleIntroSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Select Job</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Select Job Posting</label>
                 <select 
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
                   value={introData.job_id}
                   onChange={e => setIntroData({...introData, job_id: e.target.value})}
                 >
@@ -2454,7 +2567,7 @@ const AdminDashboard = () => {
                 <label className="block text-sm font-bold text-slate-700 mb-2">Select Candidate</label>
                 <select 
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
                   value={introData.candidate_id}
                   onChange={e => setIntroData({...introData, candidate_id: e.target.value})}
                 >
@@ -2464,78 +2577,253 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Admin Note</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Admin Note / Message</label>
               <textarea 
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
                 value={introData.note}
                 onChange={e => setIntroData({...introData, note: e.target.value})}
+                placeholder="Include details about why this match is recommended..."
               />
             </div>
-            <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all">
-              Create Introduction
+            <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer">
+              Create Introduction & Notify Parties
             </button>
           </form>
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <h2 className="text-xl font-bold">Candidates ({candidates.length})</h2>
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search name or parish..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
+      {/* Main unified management panel */}
+      <div className="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+        
+        {/* Navigation tabs & global tab-specific search bar */}
+        <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => { setSelectedTab('candidates'); setSearchTerm(''); }}
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer",
+                selectedTab === 'candidates' 
+                  ? "bg-emerald-600 text-white shadow-sm" 
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Users className="w-4 h-4" />
+              <span>Candidates ({candidates.length})</span>
+            </button>
+            
+            <button
+              onClick={() => { setSelectedTab('employers'); setSearchTerm(''); }}
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer",
+                selectedTab === 'employers' 
+                  ? "bg-emerald-600 text-white shadow-sm" 
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Employers ({employers.length})</span>
+            </button>
+
+            <button
+              onClick={() => { setSelectedTab('jobs'); setSearchTerm(''); }}
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer",
+                selectedTab === 'jobs' 
+                  ? "bg-emerald-600 text-white shadow-sm" 
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Briefcase className="w-4 h-4" />
+              <span>Jobs ({jobs.length})</span>
+            </button>
+
+            <button
+              onClick={() => { setSelectedTab('referrals'); setSearchTerm(''); }}
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer",
+                selectedTab === 'referrals' 
+                  ? "bg-emerald-600 text-white shadow-sm" 
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Gift className="w-4 h-4" />
+              <span>Referrals ({referrals.length})</span>
+            </button>
           </div>
-          <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-            {filteredCandidates.map(c => (
-              <div 
-                key={c.id} 
-                className="p-4 flex justify-between items-center hover:bg-slate-50 cursor-pointer transition-colors"
-                onClick={() => setSelectedCandidate(c)}
-              >
-                <div>
-                  <p className="font-bold text-slate-900">{c.full_name}</p>
-                  <p className="text-xs text-slate-500">{c.parish} Parish</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-xs font-bold text-emerald-600 uppercase">{c.status}</div>
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
-                </div>
-              </div>
-            ))}
-            {filteredCandidates.length === 0 && (
-              <div className="p-12 text-center text-slate-400">No candidates found.</div>
-            )}
+
+          {/* Search box targeting active tab keys */}
+          <div className="relative w-full lg:w-80">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder={`Search in ${selectedTab}...`}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100">
-            <h2 className="text-xl font-bold">Jobs ({jobs.length})</h2>
-          </div>
-          <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-            {jobs.map(j => (
-              <div key={j.id} className="p-4 flex justify-between items-center">
-                <div>
-                  <p className="font-bold text-slate-900">{j.title}</p>
-                  <p className="text-xs text-slate-500">{j.company_name}</p>
+        {/* Tab content renders dynamic tables / list items */}
+        <div className="overflow-x-auto">
+          {selectedTab === 'candidates' && (
+            <div className="divide-y divide-slate-100">
+              {filteredItems.map(c => (
+                <div key={c.id} className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50/50 transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      <p className="font-extrabold text-slate-900 text-lg">{c.full_name}</p>
+                      <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold uppercase">{c.status}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm text-slate-500">
+                      <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-slate-400" />{c.parish} Parish</span>
+                      <span className="flex items-center gap-1"><Mail className="w-4 h-4 text-slate-400" />{c.email}</span>
+                      <span className="flex items-center gap-1"><Phone className="w-4 h-4 text-slate-400" />{c.phone || "No phone"}</span>
+                    </div>
+                    {/* Render Specialties pills */}
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {(() => {
+                        try {
+                          const specialties = typeof c.role_specialties === 'string' 
+                            ? JSON.parse(c.role_specialties) 
+                            : c.role_specialties;
+                          return (Array.isArray(specialties) ? specialties : []).map((s: string) => (
+                            <span key={s} className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                              {s}
+                            </span>
+                          ));
+                        } catch (e) {
+                          return null;
+                        }
+                      })()}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedCandidate(c)}
+                    className="px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-all cursor-pointer self-start sm:self-center"
+                  >
+                    View details
+                  </button>
                 </div>
-                <div className="text-xs font-bold text-slate-400 uppercase">{j.status}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+              {filteredItems.length === 0 && (
+                <div className="p-16 text-center text-slate-400">No candidates found.</div>
+              )}
+            </div>
+          )}
+
+          {selectedTab === 'employers' && (
+            <div className="divide-y divide-slate-100">
+              {filteredItems.map(e => (
+                <div key={e.id} className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50/50 transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-extrabold text-slate-900 text-lg">{e.company_name}</p>
+                      {e.accepted_agreement_at && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Signed
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm text-slate-500">
+                      <span className="flex items-center gap-1"><User className="w-4 h-4 text-slate-400" />Contact: {e.contact_name}</span>
+                      <span className="flex items-center gap-1"><Mail className="w-4 h-4 text-slate-400" />{e.email}</span>
+                      <span className="flex items-center gap-1"><Phone className="w-4 h-4 text-slate-400" />{e.phone || "No phone"}</span>
+                      <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-slate-400" />{e.parish} Parish</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedEmployer(e)}
+                    className="px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-all cursor-pointer self-start sm:self-center"
+                  >
+                    View details
+                  </button>
+                </div>
+              ))}
+              {filteredItems.length === 0 && (
+                <div className="p-16 text-center text-slate-400">No employers found.</div>
+              )}
+            </div>
+          )}
+
+          {selectedTab === 'jobs' && (
+            <div className="divide-y divide-slate-100">
+              {filteredItems.map(j => (
+                <div key={j.id} className="p-6 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
+                  <div>
+                    <p className="font-extrabold text-slate-900 text-lg">{j.title}</p>
+                    <p className="text-sm font-semibold text-emerald-600">{j.company_name}</p>
+                    <div className="flex flex-wrap items-center gap-x-4 mt-1 text-xs text-slate-500">
+                      <span>Category: <strong className="text-slate-700">{j.role_category}</strong></span>
+                      <span>Parish: <strong className="text-slate-700">{j.parish}</strong></span>
+                      <span>Status: <strong className={cn("uppercase", j.status === 'open' ? 'text-emerald-600' : 'text-slate-400')}>{j.status}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredItems.length === 0 && (
+                <div className="p-16 text-center text-slate-400">No jobs listed.</div>
+              )}
+            </div>
+          )}
+
+          {selectedTab === 'referrals' && (
+            <div className="divide-y divide-slate-100">
+              {filteredItems.map(r => (
+                <div key={r.id} className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-extrabold text-slate-900 text-lg">Referral: {r.candidate_name}</p>
+                      <span className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-bold uppercase",
+                        r.status === 'pending' && "bg-amber-100 text-amber-800",
+                        r.status === 'hired_waiting_pay_periods' && "bg-indigo-100 text-indigo-800",
+                        r.status === 'paid_completed' && "bg-emerald-100 text-emerald-800",
+                        r.status === 'rejected' && "bg-red-100 text-red-800"
+                      )}>
+                        {r.status === 'hired_waiting_pay_periods' ? 'Hired / In Waiting' : r.status}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600 pt-1">
+                      <div>
+                        <strong className="text-slate-900 block text-xs uppercase tracking-wider text-slate-400 mb-1">Referrer (Who Referred)</strong>
+                        <p className="font-bold text-slate-800">{r.referrer_name}</p>
+                        <p className="text-xs text-slate-500">{r.referrer_email}</p>
+                      </div>
+                      <div>
+                        <strong className="text-slate-900 block text-xs uppercase tracking-wider text-slate-400 mb-1">Candidate Referred</strong>
+                        <p className="font-bold text-slate-800">{r.candidate_name}</p>
+                        <p className="text-xs text-slate-500">{r.candidate_email}</p>
+                      </div>
+                    </div>
+
+                    {r.employer_notes && (
+                      <div className="mt-3 p-4 bg-slate-50 rounded-2xl text-xs text-slate-600 border border-slate-100 italic">
+                        <strong>Admin/Employer Notes:</strong> "{r.employer_notes}"
+                      </div>
+                    )}
+                    <p className="text-[11px] text-slate-400 pt-1">Submitted on: {new Date(r.created_at).toLocaleString()}</p>
+                  </div>
+                  
+                  <button 
+                    onClick={() => openReferralModal(r)}
+                    className="px-5 py-2.5 text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-all cursor-pointer whitespace-nowrap self-start md:self-center"
+                  >
+                    Update status & notes
+                  </button>
+                </div>
+              ))}
+              {filteredItems.length === 0 && (
+                <div className="p-16 text-center text-slate-400">No referral applications found.</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Candidate Detail Modal */}
+      {/* Candidate details modal dialog */}
       <AnimatePresence>
         {selectedCandidate && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
@@ -2610,7 +2898,7 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-3 text-slate-600">
                       <Calendar className="w-4 h-4" />
-                      <span>Joined: {new Date(selectedCandidate.created_at).toLocaleDateString()}</span>
+                      <span>Joined: {new Date(selectedCandidate.created_at || Date.now()).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
@@ -2630,11 +2918,178 @@ const AdminDashboard = () => {
                     setShowIntroForm(true);
                     setSelectedCandidate(null);
                   }}
-                  className="flex-1 py-4 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                  className="flex-1 py-4 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 cursor-pointer"
                 >
                   Create Introduction
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Employer details modal dialog */}
+      <AnimatePresence>
+        {selectedEmployer && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setSelectedEmployer(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-2xl p-8 md:p-12 overflow-y-auto max-h-[90vh]"
+            >
+              <button 
+                onClick={() => setSelectedEmployer(null)}
+                className="absolute top-8 right-8 p-2 rounded-full hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+
+              <div className="mb-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-3xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                    <Building2 className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-slate-900">{selectedEmployer.company_name}</h2>
+                    <p className="text-slate-500 font-medium">{selectedEmployer.parish} Parish</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Contact Person</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <User className="w-4 h-4" />
+                      <span>{selectedEmployer.contact_name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <Mail className="w-4 h-4" />
+                      <span>{selectedEmployer.email || "No email provided"}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <Phone className="w-4 h-4" />
+                      <span>{selectedEmployer.phone || "No phone provided"}</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Verification & Status</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      <span>Agreement Status: <span className="font-bold text-emerald-600">SIGNED</span></span>
+                    </div>
+                    {selectedEmployer.accepted_agreement_at && (
+                      <div className="flex items-center gap-3 text-slate-600">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-xs">Signed at: {new Date(selectedEmployer.accepted_agreement_at).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {selectedEmployer.website && (
+                <div className="mb-8">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Company Website</h3>
+                  <a 
+                    href={selectedEmployer.website} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="inline-flex items-center gap-2 text-emerald-600 font-bold hover:underline"
+                  >
+                    <span>{selectedEmployer.website}</span>
+                  </a>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Referral update modal dialog */}
+      <AnimatePresence>
+        {selectedReferral && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setSelectedReferral(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl p-8 md:p-10 overflow-y-auto max-h-[90vh]"
+            >
+              <button 
+                onClick={() => setSelectedReferral(null)}
+                className="absolute top-8 right-8 p-2 rounded-full hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Update Referral status</h2>
+              
+              <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm space-y-1">
+                <p><strong className="text-slate-500">Candidate:</strong> {selectedReferral.candidate_name} ({selectedReferral.candidate_email})</p>
+                <p><strong className="text-slate-500">Referrer:</strong> {selectedReferral.referrer_name} ({selectedReferral.referrer_email})</p>
+              </div>
+
+              <form onSubmit={handleReferralStatusUpdate} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Referral Status</label>
+                  <select 
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                    value={referralStatus}
+                    onChange={e => setReferralStatus(e.target.value)}
+                  >
+                    <option value="pending">Pending Review</option>
+                    <option value="hired_waiting_pay_periods">Hired / Waiting on Pay Periods</option>
+                    <option value="paid_completed">Paid / Completed</option>
+                    <option value="rejected">Rejected / Invalid</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Employer/Admin Notes</label>
+                  <textarea 
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-sm"
+                    value={referralNotes}
+                    onChange={e => setReferralNotes(e.target.value)}
+                    placeholder="Add details on hiring status, compensation reviews, tracking codes, or verification steps..."
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedReferral(null)}
+                    className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

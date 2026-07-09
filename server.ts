@@ -1,3 +1,9 @@
+/**
+ * CHANGES COMMITTED:
+ * - Added `/api/admin/employers` and `/api/admin/jobs` admin-only secure REST API endpoints.
+ * - Joined candidates and employers tables with the users table to expose user emails securely.
+ * - Created database-backed backend services for admin monitoring.
+ */
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import cookieParser from "cookie-parser";
@@ -244,10 +250,49 @@ async function startServer() {
     });
   });
 
+  // Admin Candidates API: Fetches candidates joined with users table to retrieve their email address
   app.get("/api/admin/candidates", authenticate, (req: any, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
-    const candidates = db.prepare("SELECT * FROM candidates").all();
-    res.json(candidates);
+    try {
+      const candidates = db.prepare(`
+        SELECT c.*, u.email 
+        FROM candidates c 
+        JOIN users u ON c.user_id = u.id
+      `).all();
+      res.json(candidates);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin Employers API: Fetches all registered employers with their emails from users table
+  app.get("/api/admin/employers", authenticate, (req: any, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+    try {
+      const employers = db.prepare(`
+        SELECT e.*, u.email 
+        FROM employers e 
+        JOIN users u ON e.user_id = u.id
+      `).all();
+      res.json(employers);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin Jobs API: Fetches all jobs with employer company names, regardless of status
+  app.get("/api/admin/jobs", authenticate, (req: any, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+    try {
+      const jobs = db.prepare(`
+        SELECT j.*, e.company_name 
+        FROM job_postings j 
+        JOIN employers e ON j.employer_id = e.id
+      `).all();
+      res.json(jobs);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.get("/api/admin/candidates/:id", authenticate, (req: any, res) => {
