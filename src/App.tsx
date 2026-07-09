@@ -817,19 +817,17 @@ const Login = () => {
         {error && (
           <div className="p-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl font-medium mb-4 text-center space-y-2">
             <p>{error}</p>
-            {error.includes("Invalid credentials") && (
-              <button 
-                type="button"
-                onClick={() => {
-                  setResetError("");
-                  setResetSuccess("");
-                  setShowResetModal(true);
-                }}
-                className="text-emerald-700 hover:text-emerald-800 underline font-bold text-xs block mx-auto cursor-pointer"
-              >
-                Forgot your password? Click here to reset it.
-              </button>
-            )}
+            <button 
+              type="button"
+              onClick={() => {
+                setResetError("");
+                setResetSuccess("");
+                setShowResetModal(true);
+              }}
+              className="text-emerald-700 hover:text-emerald-800 underline font-bold text-xs block mx-auto cursor-pointer"
+            >
+              Forgot your password? Click here to reset it.
+            </button>
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
