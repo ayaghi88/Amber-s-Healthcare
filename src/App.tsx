@@ -814,7 +814,24 @@ const Login = () => {
     <div className="pt-32 pb-24 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
         <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Welcome Back</h2>
-        {error && <p className="text-red-600 mb-4 text-center text-sm font-semibold">{error}</p>}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl font-medium mb-4 text-center space-y-2">
+            <p>{error}</p>
+            {error.includes("Invalid credentials") && (
+              <button 
+                type="button"
+                onClick={() => {
+                  setResetError("");
+                  setResetSuccess("");
+                  setShowResetModal(true);
+                }}
+                className="text-emerald-700 hover:text-emerald-800 underline font-bold text-xs block mx-auto cursor-pointer"
+              >
+                Forgot your password? Click here to reset it.
+              </button>
+            )}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
