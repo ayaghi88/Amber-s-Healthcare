@@ -7,10 +7,22 @@ import { v4 as uuidv4 } from "uuid";
 import db from "./db.ts";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-key";
+
+// Simple persistent logging for debugging
+function logDebug(message: string) {
+  const line = `[${new Date().toISOString()}] ${message}\n`;
+  try {
+    fs.appendFileSync(path.join(process.cwd(), "server_debug.log"), line);
+  } catch (err) {
+    console.error("Failed to write to server_debug.log", err);
+  }
+  console.log(message);
+}
 
 // PayPal Access Token Generator
 async function getPayPalAccessToken() {
@@ -47,8 +59,16 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.set("trust proxy", 1);
+
   app.use(express.json());
   app.use(cookieParser());
+
+  // Global request logging for debugging
+  app.use((req, res, next) => {
+    logDebug(`${req.method} ${req.url}`);
+    next();
+  });
 
   // Seed Admin
   const adminEmail = "amber@ambershealthcare.com";
@@ -56,27 +76,38 @@ async function startServer() {
   if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash("admin123", 10);
     db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(uuidv4(), adminEmail, hashedPassword, "admin");
-    console.log("Admin user seeded: amber@ambershealthcare.com / admin123");
+    logDebug("Admin user seeded: amber@ambershealthcare.com / admin123");
   }
 
   // Auth Middleware
   const authenticate = (req: any, res: any, next: any) => {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    let token = req.cookies.token;
+    if (!token && req.headers.authorization) {
+      const parts = req.headers.authorization.split(" ");
+      if (parts.length === 2 && parts[0] === "Bearer") {
+        token = parts[1];
+      }
+    }
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
       req.user = decoded;
       next();
-    } catch (err) {
+    } catch (err: any) {
       res.status(401).json({ error: "Invalid token" });
     }
   };
 
   // --- Auth Routes ---
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", async (req, res, next) => {
     const { email, password, role } = req.body;
-    console.log(`Register attempt: ${email} as ${role}`);
-    if (!['candidate', 'employer'].includes(role)) return res.status(400).json({ error: "Invalid role" });
+    logDebug(`Register attempt: ${email} as ${role}`);
+    if (!['candidate', 'employer'].includes(role)) {
+      logDebug(`Register failed: Invalid role - ${role}`);
+      return res.status(400).json({ error: "Invalid role" });
+    }
 
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -85,36 +116,36 @@ async function startServer() {
       
       const token = jwt.sign({ id: userId, email, role }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
-      console.log(`Register success: ${email}`);
-      res.json({ user: { id: userId, email, role } });
+      logDebug(`Register success: ${email}`);
+      res.json({ token, user: { id: userId, email, role } });
     } catch (err: any) {
-      console.error(`Register error: ${err.message}`);
+      logDebug(`Register error: ${err.message}`);
       res.status(400).json({ error: err.message });
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", async (req, res, next) => {
     const { email, password } = req.body;
-    console.log(`Login attempt: ${email}`);
+    logDebug(`Login attempt: ${email}`);
     try {
       const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
       if (!user) {
-        console.log(`Login failed: User not found - ${email}`);
+        logDebug(`Login failed: User not found - ${email}`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
       
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        console.log(`Login failed: Password mismatch - ${email}`);
+        logDebug(`Login failed: Password mismatch - ${email}`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
-      console.log(`Login success: ${email} (${user.role})`);
-      res.json({ user: { id: user.id, email: user.email, role: user.role } });
+      logDebug(`Login success: ${email} (${user.role})`);
+      res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (err: any) {
-      console.error(`Login error: ${err.message}`);
+      logDebug(`Login error: ${err.message}`);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -275,6 +306,23 @@ async function startServer() {
       db.prepare(`
         INSERT INTO employers (id, user_id, company_name, contact_name, phone, parish, website, accepted_agreement_at)
         VALUES (?, ?, 'Pending Setup', 'Pending Setup', '', 'East Baton Rouge', '', CURRENT_TIMESTAMP)
+      `).run(id, req.user.id);
+    }
+    res.json({ success: true });
+  });
+
+  app.post("/api/candidates/accept-terms", authenticate, (req: any, res) => {
+    if (req.user.role !== 'candidate') return res.status(403).json({ error: "Forbidden" });
+    
+    // Check if candidate record exists
+    const existing = db.prepare("SELECT * FROM candidates WHERE user_id = ?").get(req.user.id);
+    if (existing) {
+      db.prepare("UPDATE candidates SET accepted_terms_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(req.user.id);
+    } else {
+      const id = uuidv4();
+      db.prepare(`
+        INSERT INTO candidates (id, user_id, full_name, phone, parish, role_specialties, experience_summary, accepted_terms_at)
+        VALUES (?, ?, 'Pending Setup', '', 'East Baton Rouge', '[]', '', CURRENT_TIMESTAMP)
       `).run(id, req.user.id);
     }
     res.json({ success: true });

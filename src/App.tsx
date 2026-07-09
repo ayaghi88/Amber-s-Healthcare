@@ -27,6 +27,21 @@ import {
 import { cn } from "./lib/utils";
 import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
 
+// Custom fetch helper to support Bearer token authentication in iframe environments without modifying read-only window.fetch
+const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  const token = localStorage.getItem("token");
+  let newInit = init ? { ...init } : {};
+  if (token) {
+    const headers = new Headers(newInit.headers);
+    if (!headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    newInit.headers = headers;
+  }
+  return window.fetch(input, newInit);
+};
+const fetch = customFetch;
+
 // --- Types ---
 interface User {
   id: string;
@@ -37,7 +52,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (user: User) => void;
+  login: (user: User, token?: string) => void;
   logout: () => void;
 }
 
@@ -464,8 +479,16 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .catch(() => setLoading(false));
   }, []);
 
-  const login = (user: User) => setUser(user);
-  const logout = () => setUser(null);
+  const login = (user: User, token?: string) => {
+    if (token) {
+      localStorage.setItem("token", token);
+    }
+    setUser(user);
+  };
+  const logout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
@@ -522,16 +545,25 @@ const Login = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
+      
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Server returned status ${res.status}`);
+      }
+
       if (res.ok && data.user) {
-        login(data.user);
+        login(data.user, data.token);
         navigate(data.user.role === 'admin' ? '/admin' : data.user.role === 'employer' ? '/employer' : '/candidate');
       } else {
         setError(data.error || "Login failed. Please check your credentials.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login error:", err);
-      setError("A network error occurred. Please try again.");
+      setError("A network or server error occurred. Please try again.");
     }
   };
 
@@ -590,16 +622,25 @@ const Register = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, role })
       });
-      const data = await res.json();
+      
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Server returned status ${res.status}`);
+      }
+
       if (res.ok && data.user) {
-        login(data.user);
+        login(data.user, data.token);
         navigate(role === 'employer' ? '/employer' : '/candidate');
       } else {
         setError(data.error || "Registration failed. Please try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Registration error:", err);
-      setError("A network error occurred. Please try again.");
+      setError("A network or server error occurred. Please try again.");
     }
   };
 
@@ -659,6 +700,7 @@ const Register = () => {
 
 const CandidateDashboard = () => {
   const { user } = useAuth();
+  const [candidate, setCandidate] = useState<any>(null);
   const [profile, setProfile] = useState({
     full_name: "",
     phone: "",
@@ -674,6 +716,7 @@ const CandidateDashboard = () => {
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data) {
+            setCandidate(data);
             let specialties = [];
             try {
               specialties = typeof data.role_specialties === 'string' 
@@ -705,16 +748,49 @@ const CandidateDashboard = () => {
     if (res.ok) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      // Re-fetch to get latest state
+      fetch("/api/candidates/me")
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) setCandidate(data);
+        });
     }
   };
 
   return (
     <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
       <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-        <div className="p-8 bg-emerald-600 text-white">
-          <h1 className="text-3xl font-bold">Candidate Profile</h1>
-          <p className="opacity-90">Complete your profile to be matched with local healthcare employers.</p>
+        <div className="p-8 bg-emerald-600 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Candidate Profile</h1>
+            <p className="opacity-90">Complete your profile to be matched with local healthcare employers.</p>
+          </div>
+          {candidate?.accepted_terms_at ? (
+            <span className="px-4 py-1.5 bg-emerald-700/50 border border-emerald-400 text-white rounded-full text-xs font-semibold">
+              ✓ Terms Accepted
+            </span>
+          ) : (
+            <span className="px-4 py-1.5 bg-amber-500 text-white rounded-full text-xs font-semibold">
+              ⚠️ Terms Pending
+            </span>
+          )}
         </div>
+
+        {!candidate?.accepted_terms_at && (
+          <div className="bg-amber-50 border-b border-amber-100 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 className="font-bold text-amber-900 text-sm">Action Required: Accept Candidate Terms</h3>
+              <p className="text-xs text-amber-700 mt-1">To ensure compliance with direct-hire regulations, you must review and accept our Candidate Terms.</p>
+            </div>
+            <Link 
+              to="/terms" 
+              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shadow-amber-200"
+            >
+              Review & Accept Terms &rarr;
+            </Link>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -1942,20 +2018,56 @@ const EmployerAgreement = () => {
   );
 };
 
-const CandidateTerms = () => (
-  <div className="pt-32 pb-24 max-w-3xl mx-auto px-4">
-    <div className="bg-white p-12 rounded-3xl shadow-xl border border-slate-200">
-      <h1 className="text-3xl font-bold mb-8">Candidate Terms</h1>
-      <div className="prose prose-slate max-w-none text-slate-600 space-y-4">
-        <ul className="list-disc pl-5 space-y-2">
-          <li>Amber’s Healthcare provides job matching and candidate introduction services only.</li>
-          <li>Candidates are never charged for placement.</li>
-          <li>Amber’s Healthcare does not employ candidates.</li>
-          <li>All employment relationships are directly between the candidate and the hiring employer.</li>
-          <li>Amber’s Healthcare does not guarantee job placement.</li>
-          <li>Employers make all hiring decisions independently.</li>
-        </ul>
+const CandidateTerms = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [candidate, setCandidate] = useState<any>(null);
+
+  useEffect(() => {
+    if (user?.role === 'candidate') {
+      fetch("/api/candidates/me")
+        .then(res => res.ok ? res.json() : null)
+        .then(data => setCandidate(data))
+        .catch(err => console.error("Error fetching candidate", err));
+    }
+  }, [user]);
+
+  return (
+    <div className="pt-32 pb-24 max-w-3xl mx-auto px-4">
+      <div className="bg-white p-12 rounded-3xl shadow-xl border border-slate-200">
+        <h1 className="text-3xl font-bold mb-8">Candidate Terms & Conditions</h1>
+        <div className="prose prose-slate max-w-none text-slate-600 space-y-6">
+          <p className="font-bold text-slate-900">Amber’s Healthcare – Candidate Terms & Conditions</p>
+          <ul className="list-disc pl-5 space-y-4">
+            <li><strong>Services:</strong> Amber’s Healthcare provides recruitment, career guidance, and candidate introduction services to local clinics and practices.</li>
+            <li><strong>No Charge:</strong> Candidates are never charged any fees for job placement, resume review, or introduction services.</li>
+            <li><strong>Employment Relationship:</strong> Amber’s Healthcare does not employ, manage, or direct candidates. Any employment offer or contract will be directly between you and the hiring employer.</li>
+            <li><strong>No Placement Guarantee:</strong> While we actively match profiles with open listings, Amber’s Healthcare does not guarantee job placement or interviews.</li>
+            <li><strong>Accurate Information:</strong> You agree to provide true, accurate, and up-to-date resume and specialty information.</li>
+            <li><strong>Local Only:</strong> Candidates must be physically located within our allowed Baton Rouge region parishes.</li>
+          </ul>
+        </div>
+        <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <span className="text-sm text-slate-500">
+            {candidate?.accepted_terms_at ? (
+              <span className="text-emerald-600 font-bold">✓ Terms accepted on {new Date(candidate.accepted_terms_at).toLocaleDateString()}</span>
+            ) : (
+              "Please accept terms to complete your onboarding"
+            )}
+          </span>
+          {user?.role === 'candidate' && !candidate?.accepted_terms_at && (
+            <button 
+              onClick={async () => {
+                await fetch("/api/candidates/accept-terms", { method: "POST" });
+                navigate("/candidate");
+              }}
+              className="px-8 py-4 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer"
+            >
+              I Accept the Terms
+            </button>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};

@@ -24,6 +24,7 @@ db.exec(`
     experience_summary TEXT,
     resume_url TEXT,
     status TEXT DEFAULT 'active',
+    accepted_terms_at DATETIME,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
@@ -90,5 +91,12 @@ db.exec(`
     FOREIGN KEY (introduction_id) REFERENCES introductions(id)
   );
 `);
+
+try {
+  db.exec("ALTER TABLE candidates ADD COLUMN accepted_terms_at DATETIME;");
+  console.log("Successfully ran migration: Added accepted_terms_at to candidates");
+} catch (e) {
+  // Column already exists, ignore
+}
 
 export default db;
