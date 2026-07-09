@@ -973,6 +973,15 @@ const EmployerDashboard = () => {
       setProfileError("Please enter a valid Contact Name.");
       return;
     }
+    const websiteTrimmed = profile.website.trim();
+    if (!websiteTrimmed) {
+      setProfileError("Website is required to verify legit employer accounts.");
+      return;
+    }
+    if (!/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(websiteTrimmed)) {
+      setProfileError("Please enter a valid website URL starting with http:// or https://");
+      return;
+    }
 
     try {
       const res = await fetch("/api/employers/profile", {
@@ -1060,13 +1069,14 @@ const EmployerDashboard = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Website (Optional)</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Company Website</label>
                 <input 
                   type="url" 
                   placeholder="https://example.com"
                   className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
                   value={profile.website}
                   onChange={e => setProfile({...profile, website: e.target.value})}
+                  required
                 />
               </div>
               <div>

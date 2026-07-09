@@ -276,6 +276,15 @@ async function startServer() {
   app.post("/api/employers/profile", authenticate, (req: any, res) => {
     if (req.user.role !== 'employer') return res.status(403).json({ error: "Forbidden" });
     const { company_name, contact_name, phone, parish, website } = req.body;
+    
+    if (!website || typeof website !== 'string' || !website.trim()) {
+      return res.status(400).json({ error: "Website is required to verify legit employer accounts." });
+    }
+    const trimmedWebsite = website.trim();
+    if (!/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(trimmedWebsite)) {
+      return res.status(400).json({ error: "Please enter a valid website URL starting with http:// or https://" });
+    }
+
     const id = uuidv4();
     try {
       db.prepare(`
@@ -287,7 +296,7 @@ async function startServer() {
           phone=excluded.phone,
           parish=excluded.parish,
           website=excluded.website
-      `).run(id, req.user.id, company_name, contact_name, phone, parish, website);
+      `).run(id, req.user.id, company_name, contact_name, phone, parish, trimmedWebsite);
       res.json({ success: true });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
