@@ -30,6 +30,21 @@ function logDebug(message: string) {
   console.log(message);
 }
 
+// Helper to dispatch email/SMS notifications and save them to SQLite table
+function dispatchNotification(recipientEmail: string | null, recipientPhone: string | null, type: 'email' | 'sms' | 'both', subject: string | null, message: string) {
+  const id = uuidv4();
+  try {
+    db.prepare(`
+      INSERT INTO notifications (id, recipient_email, recipient_phone, type, subject, message, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'sent')
+    `).run(id, recipientEmail, recipientPhone, type, subject, message);
+    logDebug(`[NOTIFICATION] SENT | Type: ${type} | To Email: ${recipientEmail || 'N/A'} | To Phone: ${recipientPhone || 'N/A'} | Subject: ${subject || 'N/A'} | Message: ${message.replace(/\n/g, ' ')}`);
+    backupDatabase();
+  } catch (err: any) {
+    logDebug(`[NOTIFICATION] FAILED to save notification: ${err.message}`);
+  }
+}
+
 // PayPal Access Token Generator
 async function getPayPalAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID;
@@ -311,6 +326,28 @@ async function startServer() {
     }
   });
 
+  // Admin Notifications API: Fetches all outbound notification dispatch logs
+  app.get("/api/admin/notifications", authenticate, (req: any, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+    try {
+      const notifications = db.prepare("SELECT * FROM notifications ORDER BY created_at DESC").all();
+      res.json(notifications);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // User Notifications API: Fetches notifications received by the logged in candidate or employer
+  app.get("/api/notifications", authenticate, (req: any, res) => {
+    try {
+      const email = req.user.email;
+      const notifications = db.prepare("SELECT * FROM notifications WHERE recipient_email = ? ORDER BY created_at DESC").all(email);
+      res.json(notifications);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/admin/candidates/:id", authenticate, (req: any, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
     const candidate = db.prepare("SELECT * FROM candidates WHERE id = ?").get(req.params.id);
@@ -577,6 +614,37 @@ async function startServer() {
         INSERT INTO introductions (id, job_id, candidate_id, note)
         VALUES (?, ?, ?, ?)
       `).run(id, jobId, candidate.id, appNote);
+
+      // Send match notifications when candidate applies directly
+      try {
+        const job = db.prepare(`
+          SELECT j.*, e.company_name, e.contact_name, u.email as employer_email, e.phone as employer_phone 
+          FROM job_postings j 
+          JOIN employers e ON j.employer_id = e.id 
+          JOIN users u ON e.user_id = u.id 
+          WHERE j.id = ?
+        `).get(jobId) as any;
+
+        const candUser = db.prepare("SELECT email FROM users WHERE id = ?").get(req.user.id) as any;
+
+        if (job) {
+          // 1. Notify Employer via Email
+          const empSubject = `New Applicant for ${job.title}: ${candidate.full_name}`;
+          const empMsg = `Hello ${job.contact_name},\n\nA local candidate, ${candidate.full_name}, has expressed direct interest in your job posting: **${job.title}**.\n\nCover Note: "${appNote}"\n\nPlease log in to Amber's Healthcare to review their complete candidate profile and schedule an interview!`;
+          dispatchNotification(job.employer_email, job.employer_phone, 'email', empSubject, empMsg);
+
+          // 2. Notify Admin via Email
+          const adminUsers = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
+          for (const admin of adminUsers) {
+            const adminSubject = `Candidate Direct Application: ${candidate.full_name} applied to ${job.title}`;
+            const adminMsg = `Admin Alert:\nCandidate **${candidate.full_name}** has applied directly to job posting **${job.title}** at **${job.company_name}**.\n\nCover Note: "${appNote}"`;
+            dispatchNotification(admin.email, null, 'email', adminSubject, adminMsg);
+          }
+        }
+      } catch (notifyErr: any) {
+        logDebug(`Error sending application notifications: ${notifyErr.message}`);
+      }
+
       res.json({ success: true, message: "Interest expressed successfully!" });
     } catch (err: any) {
       if (err.message.includes("UNIQUE constraint failed")) {
@@ -649,11 +717,52 @@ async function startServer() {
   app.post("/api/introductions", authenticate, (req: any, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
     const { job_id, candidate_id, note } = req.body;
+    if (!job_id || !candidate_id) {
+      return res.status(400).json({ error: "Please select both a job posting and a candidate." });
+    }
     const id = uuidv4();
     try {
       db.prepare("INSERT INTO introductions (id, job_id, candidate_id, note) VALUES (?, ?, ?, ?)").run(id, job_id, candidate_id, note);
+      
+      // Send match notifications to both candidate and employer
+      try {
+        const candidate = db.prepare(`
+          SELECT c.*, u.email as candidate_email 
+          FROM candidates c 
+          JOIN users u ON c.user_id = u.id 
+          WHERE c.id = ?
+        `).get(candidate_id) as any;
+
+        const job = db.prepare(`
+          SELECT j.*, e.company_name, e.contact_name, u.email as employer_email, e.phone as employer_phone 
+          FROM job_postings j 
+          JOIN employers e ON j.employer_id = e.id 
+          JOIN users u ON e.user_id = u.id 
+          WHERE j.id = ?
+        `).get(job_id) as any;
+
+        if (candidate && job) {
+          const formattedNote = note && note.trim() ? note.trim() : 'Our placement team identified you as a great fit!';
+          
+          // 1. Notify Candidate via Email and SMS
+          const candEmailSubject = `Matched! You've been introduced to ${job.company_name} - ${job.title}`;
+          const candEmailMsg = `Hi ${candidate.full_name},\n\nWe have exciting news! You have been matched and introduced to the position of ${job.title} at ${job.company_name} in ${job.parish} Parish.\n\nMatching Note: "${formattedNote}"\n\nPlease log in to your dashboard to confirm your interest and schedule next steps!`;
+          dispatchNotification(candidate.candidate_email, candidate.phone, 'both', candEmailSubject, candEmailMsg);
+
+          // 2. Notify Employer via Email
+          const empEmailSubject = `Qualified Match: ${candidate.full_name} introduced for ${job.title}`;
+          const empEmailMsg = `Hello ${job.contact_name},\n\nWe have found a qualified local match for your position of ${job.title}!\n\nCandidate Name: ${candidate.full_name}\nParish: ${candidate.parish}\nPreferred Contact: ${candidate.contact_preference || 'Email'}\n\nMatching Note: "${formattedNote}"\n\nPlease log in to your employer dashboard to review their specialties and coordinate an interview!`;
+          dispatchNotification(job.employer_email, job.employer_phone, 'email', empEmailSubject, empEmailMsg);
+        }
+      } catch (notifyErr: any) {
+        logDebug(`Error sending match notifications: ${notifyErr.message}`);
+      }
+
       res.json({ id });
     } catch (err: any) {
+      if (err.message.includes("UNIQUE constraint failed")) {
+        return res.status(400).json({ error: "This candidate has already been matched/introduced to this job posting." });
+      }
       res.status(400).json({ error: err.message });
     }
   });

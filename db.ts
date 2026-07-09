@@ -133,6 +133,17 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    recipient_email TEXT,
+    recipient_phone TEXT,
+    type TEXT CHECK(type IN ('email', 'sms', 'both')) NOT NULL,
+    subject TEXT,
+    message TEXT NOT NULL,
+    status TEXT CHECK(status IN ('sent', 'failed')) DEFAULT 'sent',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 try {
@@ -163,7 +174,8 @@ export function backupDatabase() {
       referrals: db.prepare("SELECT * FROM referrals").all(),
       introductions: db.prepare("SELECT * FROM introductions").all(),
       hire_confirmations: db.prepare("SELECT * FROM hire_confirmations").all(),
-      placement_invoices: db.prepare("SELECT * FROM placement_invoices").all()
+      placement_invoices: db.prepare("SELECT * FROM placement_invoices").all(),
+      notifications: db.prepare("SELECT * FROM notifications").all()
     };
     fs.writeFileSync(backupPath, JSON.stringify(backupData, null, 2), 'utf-8');
     console.log("Database successfully backed up to db_backup.json");
@@ -279,6 +291,18 @@ export function restoreDatabase() {
       `);
       for (const p of backupData.placement_invoices) {
         insertInvoice.run(p.id, p.employer_id, p.candidate_id, p.job_id, p.introduction_id, p.amount_cents, p.currency, p.status, p.stripe_invoice_id, p.stripe_payment_status, p.created_at, p.paid_at);
+      }
+    }
+
+    // Restore notifications
+    if (backupData.notifications) {
+      db.prepare("DELETE FROM notifications").run();
+      const insertNotification = db.prepare(`
+        INSERT INTO notifications (id, recipient_email, recipient_phone, type, subject, message, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const n of backupData.notifications) {
+        insertNotification.run(n.id, n.recipient_email, n.recipient_phone, n.type, n.subject, n.message, n.status, n.created_at);
       }
     }
     

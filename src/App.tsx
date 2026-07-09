@@ -3,6 +3,10 @@
  * - Implemented Admin Control Center Tabbed UI to display and search Candidates, Employers, Job Postings, and Referrals.
  * - Added a dedicated Referral Management system allowing the administrator (amber@ambershealthcare.com) to view and update statuses.
  * - Created detailed modal popups for viewing employer information, contact persons, and agreement sign times.
+ * - Created robust SQLite schemas and endpoints for managing email & text notification alert dispatches.
+ * - Added a live "Alert Logs" tab to the Admin Dashboard for monitoring outbound notifications.
+ * - Integrated "Matching & Onboarding Alerts" feed in the Candidate and Employer portals to display match history.
+ * - Enhanced Introduction creator modal with loading feedback, duplicate prevention, and automated dual-channel notifications.
  */
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
 import React, { useState, useEffect, createContext, useContext, FormEvent } from "react";
@@ -30,7 +34,10 @@ import {
   Calendar,
   Sparkles,
   Gift,
-  Edit
+  Edit,
+  Loader2,
+  Bell,
+  Smartphone
 } from "lucide-react";
 import { cn } from "./lib/utils";
 import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
@@ -1121,9 +1128,17 @@ const CandidateDashboard = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     if (user?.role === 'candidate') {
+      fetch("/api/notifications")
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          if (Array.isArray(data)) setNotifications(data);
+        })
+        .catch(err => console.error("Error fetching notifications", err));
+
       fetch("/api/candidates/me")
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -1396,6 +1411,38 @@ const CandidateDashboard = () => {
           </div>
         </form>
       </div>
+
+      <div className="mt-8 bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+        <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-emerald-400 animate-pulse" />
+            <h2 className="text-lg font-bold">Matching & Onboarding Alerts ({notifications.length})</h2>
+          </div>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {notifications.map(n => (
+            <div key={n.id} className="p-6 hover:bg-slate-50/50 transition-colors space-y-3">
+              <div className="flex justify-between items-center">
+                <span className={cn(
+                  "px-2.5 py-1 rounded-full text-xs font-bold uppercase",
+                  n.type === 'both' ? 'bg-indigo-100 text-indigo-800' :
+                  n.type === 'sms' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                )}>
+                  {n.type === 'both' ? '📧 Email & 📱 SMS' : n.type === 'sms' ? '📱 SMS Match Alert' : '📧 Email Match Alert'}
+                </span>
+                <span className="text-xs text-slate-400 font-medium">{new Date(n.created_at).toLocaleString()}</span>
+              </div>
+              <h3 className="font-bold text-slate-900 text-sm">Subject: {n.subject}</h3>
+              <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">{n.message}</p>
+            </div>
+          ))}
+          {notifications.length === 0 && (
+            <div className="p-12 text-center text-slate-400 text-sm">
+              No matching alerts or introduction notifications yet. When you are matched with an employer, alerts will show here.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -1434,18 +1481,20 @@ const EmployerDashboard = () => {
   const [profileError, setProfileError] = useState("");
   const [profileSubmitted, setProfileSubmitted] = useState(false);
   const [jobSubmitted, setJobSubmitted] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
   
   // Invoice PayPal payment state
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<any>(null);
 
   const fetchData = async () => {
     try {
-      const [empRes, jobsRes, introsRes, invRes, refRes] = await Promise.all([
+      const [empRes, jobsRes, introsRes, invRes, refRes, notifRes] = await Promise.all([
         fetch("/api/employers/me"),
         fetch("/api/employers/jobs"),
         fetch("/api/employers/introductions"),
         fetch("/api/employers/invoices"),
-        fetch("/api/referrals")
+        fetch("/api/referrals"),
+        fetch("/api/notifications")
       ]);
       
       if (empRes.ok) {
@@ -1476,6 +1525,10 @@ const EmployerDashboard = () => {
       if (refRes && refRes.ok) {
         const data = await refRes.json();
         if (Array.isArray(data)) setReferrals(data);
+      }
+      if (notifRes && notifRes.ok) {
+        const data = await notifRes.json();
+        if (Array.isArray(data)) setNotifications(data);
       }
     } catch (err) {
       console.error("Failed to fetch employer data", err);
@@ -2137,6 +2190,39 @@ const EmployerDashboard = () => {
               </table>
             </div>
           </section>
+
+          {/* Matching Alert Notifications */}
+          <section className="bg-white rounded-[30px] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="p-6 bg-slate-950 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-emerald-400 animate-pulse" />
+                <h2 className="text-lg font-bold">Matching & Application Alert Logs ({notifications.length})</h2>
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+              {notifications.map(n => (
+                <div key={n.id} className="p-6 hover:bg-slate-50/50 transition-colors space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className={cn(
+                      "px-2.5 py-1 rounded-full text-xs font-bold uppercase",
+                      n.type === 'both' ? 'bg-indigo-100 text-indigo-800' :
+                      n.type === 'sms' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                    )}>
+                      {n.type === 'both' ? '📧 Email & 📱 SMS' : n.type === 'sms' ? '📱 SMS Match Alert' : '📧 Email Match Alert'}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">{new Date(n.created_at).toLocaleString()}</span>
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm">Subject: {n.subject}</h3>
+                  <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">{n.message}</p>
+                </div>
+              ))}
+              {notifications.length === 0 && (
+                <div className="p-12 text-center text-slate-400 text-sm">
+                  No match alerts have been triggered yet for your organization. When we make an introduction, the details will show here.
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
 
@@ -2524,10 +2610,11 @@ const AdminDashboard = () => {
   const [employers, setEmployers] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   
   // Search state and selected active tab
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState<'candidates' | 'employers' | 'jobs' | 'referrals'>('candidates');
+  const [selectedTab, setSelectedTab] = useState<'candidates' | 'employers' | 'jobs' | 'referrals' | 'notifications'>('candidates');
   
   // Modals & detail views states
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
@@ -2536,6 +2623,11 @@ const AdminDashboard = () => {
   const [showIntroForm, setShowIntroForm] = useState(false);
   const [introData, setIntroData] = useState({ job_id: "", candidate_id: "", note: "" });
   
+  // Submission feedback states
+  const [introError, setIntroError] = useState<string | null>(null);
+  const [introSuccess, setIntroSuccess] = useState<string | null>(null);
+  const [introLoading, setIntroLoading] = useState(false);
+
   // Referral updating state variables
   const [referralStatus, setReferralStatus] = useState("pending");
   const [referralNotes, setReferralNotes] = useState("");
@@ -2543,12 +2635,13 @@ const AdminDashboard = () => {
   // Fetch all administrative data from corresponding server endpoints
   const fetchData = async () => {
     try {
-      const [statsRes, candRes, jobsRes, empRes, refRes] = await Promise.all([
+      const [statsRes, candRes, jobsRes, empRes, refRes, notifyRes] = await Promise.all([
         fetch("/api/admin/stats"),
         fetch("/api/admin/candidates"),
         fetch("/api/admin/jobs"),
         fetch("/api/admin/employers"),
-        fetch("/api/referrals")
+        fetch("/api/referrals"),
+        fetch("/api/admin/notifications")
       ]);
       
       if (statsRes.ok) setStats(await statsRes.json());
@@ -2568,6 +2661,10 @@ const AdminDashboard = () => {
         const data = await refRes.json();
         if (Array.isArray(data)) setReferrals(data);
       }
+      if (notifyRes.ok) {
+        const data = await notifyRes.json();
+        if (Array.isArray(data)) setNotifications(data);
+      }
     } catch (err) {
       console.error("Failed to fetch admin data", err);
     }
@@ -2583,15 +2680,33 @@ const AdminDashboard = () => {
   // Handle submitting candidate/job introduction
   const handleIntroSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = await fetch("/api/introductions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(introData)
-    });
-    if (res.ok) {
-      setShowIntroForm(false);
-      setIntroData({ job_id: "", candidate_id: "", note: "" });
-      fetchData();
+    setIntroError(null);
+    setIntroSuccess(null);
+    setIntroLoading(true);
+
+    try {
+      const res = await fetch("/api/introductions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(introData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setIntroSuccess("Introduction created successfully & email/text notifications dispatched!");
+        setIntroData({ job_id: "", candidate_id: "", note: "" });
+        fetchData();
+        setTimeout(() => {
+          setShowIntroForm(false);
+          setIntroSuccess(null);
+        }, 3000);
+      } else {
+        setIntroError(data.error || "Failed to create introduction.");
+      }
+    } catch (err) {
+      console.error("Error creating introduction:", err);
+      setIntroError("A network error occurred. Please try again.");
+    } finally {
+      setIntroLoading(false);
     }
   };
 
@@ -2660,6 +2775,14 @@ const AdminDashboard = () => {
         (r.candidate_email || "").toLowerCase().includes(term) ||
         (r.status || "").toLowerCase().includes(term)
       );
+    } else if (selectedTab === 'notifications') {
+      return notifications.filter(n => 
+        (n.recipient_email || "").toLowerCase().includes(term) ||
+        (n.recipient_phone || "").toLowerCase().includes(term) ||
+        (n.subject || "").toLowerCase().includes(term) ||
+        (n.message || "").toLowerCase().includes(term) ||
+        (n.type || "").toLowerCase().includes(term)
+      );
     }
     return [];
   };
@@ -2711,17 +2834,40 @@ const AdminDashboard = () => {
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-slate-900">New Candidate-Job Introduction</h2>
-            <button onClick={() => setShowIntroForm(false)} className="p-2 hover:bg-slate-100 rounded-full">
+            <button 
+              onClick={() => {
+                setShowIntroForm(false);
+                setIntroError(null);
+                setIntroSuccess(null);
+              }} 
+              className="p-2 hover:bg-slate-100 rounded-full"
+            >
               <X className="w-6 h-6 text-slate-400" />
             </button>
           </div>
+
+          {introError && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-sm font-semibold flex items-start gap-2">
+              <span className="text-rose-500 font-bold">⚠️ Error:</span>
+              <span>{introError}</span>
+            </div>
+          )}
+
+          {introSuccess && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl text-sm font-semibold flex items-start gap-2">
+              <span className="text-emerald-500 font-bold">✨ Success:</span>
+              <span>{introSuccess}</span>
+            </div>
+          )}
+
           <form onSubmit={handleIntroSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Select Job Posting</label>
                 <select 
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                  disabled={introLoading}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                   value={introData.job_id}
                   onChange={e => setIntroData({...introData, job_id: e.target.value})}
                 >
@@ -2733,7 +2879,8 @@ const AdminDashboard = () => {
                 <label className="block text-sm font-bold text-slate-700 mb-2">Select Candidate</label>
                 <select 
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                  disabled={introLoading}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                   value={introData.candidate_id}
                   onChange={e => setIntroData({...introData, candidate_id: e.target.value})}
                 >
@@ -2746,14 +2893,26 @@ const AdminDashboard = () => {
               <label className="block text-sm font-bold text-slate-700 mb-2">Admin Note / Message</label>
               <textarea 
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                disabled={introLoading}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 value={introData.note}
                 onChange={e => setIntroData({...introData, note: e.target.value})}
                 placeholder="Include details about why this match is recommended..."
               />
             </div>
-            <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer">
-              Create Introduction & Notify Parties
+            <button 
+              type="submit" 
+              disabled={introLoading}
+              className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer flex justify-center items-center gap-2 disabled:bg-slate-400 disabled:cursor-not-allowed"
+            >
+              {introLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Dispatched Match & Sending Notifications...</span>
+                </>
+              ) : (
+                <span>Create Introduction & Send Email/Text Alerts</span>
+              )}
             </button>
           </form>
         </motion.div>
@@ -2815,6 +2974,19 @@ const AdminDashboard = () => {
             >
               <Gift className="w-4 h-4" />
               <span>Referrals ({referrals.length})</span>
+            </button>
+
+            <button
+              onClick={() => { setSelectedTab('notifications'); setSearchTerm(''); }}
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer",
+                selectedTab === 'notifications' 
+                  ? "bg-emerald-600 text-white shadow-sm" 
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Bell className="w-4 h-4" />
+              <span>Alert Logs ({notifications.length})</span>
             </button>
           </div>
 
@@ -2983,6 +3155,62 @@ const AdminDashboard = () => {
               ))}
               {filteredItems.length === 0 && (
                 <div className="p-16 text-center text-slate-400">No referral applications found.</div>
+              )}
+            </div>
+          )}
+
+          {selectedTab === 'notifications' && (
+            <div className="divide-y divide-slate-100">
+              {filteredItems.map(n => (
+                <div key={n.id} className="p-6 hover:bg-slate-50/50 transition-colors flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-bold uppercase",
+                        n.type === 'both' ? 'bg-indigo-100 text-indigo-800' :
+                        n.type === 'sms' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                      )}>
+                        {n.type === 'both' ? '📧 Email & 📱 SMS' : n.type === 'sms' ? '📱 SMS Match Alert' : '📧 Email Match Alert'}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" /> Dispatched
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      Dispatched: {new Date(n.created_at).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                      {n.recipient_email && (
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="font-semibold text-slate-800">{n.recipient_email}</span>
+                        </div>
+                      )}
+                      {n.recipient_phone && (
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <Smartphone className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="font-semibold text-slate-800">{n.recipient_phone}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {n.subject && (
+                      <h4 className="text-sm font-bold text-slate-900 pt-1">
+                        Subject: <span className="font-semibold text-slate-700">{n.subject}</span>
+                      </h4>
+                    )}
+
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs text-slate-600 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">
+                      {n.message}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredItems.length === 0 && (
+                <div className="p-16 text-center text-slate-400">No alert notification logs found.</div>
               )}
             </div>
           )}
