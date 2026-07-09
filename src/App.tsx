@@ -1219,7 +1219,7 @@ const CandidateDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Preferred Interview Format</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Preferred Interview Format (All Remote)</label>
                 <select 
                   className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                   value={profile.interview_preference}
@@ -1228,8 +1228,7 @@ const CandidateDashboard = () => {
                   <option value="Virtual Video Call">Virtual Video Call (Standard)</option>
                   <option value="Phone-Only Interview">Phone-Only Interview (No Video)</option>
                   <option value="Written Questionnaire / Email Interview">Written Questionnaire / Email Interview (Inclusive option)</option>
-                  <option value="In-Person (Questions provided 48h in advance)">In-Person (Questions provided 48h in advance)</option>
-                  <option value="In-Person Interview">In-Person Interview (Standard)</option>
+                  <option value="Virtual Video Call (Questions provided 48h in advance)">Virtual Video Call (Questions provided 48h in advance)</option>
                 </select>
               </div>
             </div>
