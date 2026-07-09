@@ -734,6 +734,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
 
@@ -744,6 +745,7 @@ const Login = () => {
   const [resetError, setResetError] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const [resetSubmitted, setResetSubmitted] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -754,6 +756,13 @@ const Login = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setSubmitted(true);
+
+    if (!email.trim() || !password.trim()) {
+      setError("Please fill out all mandatory fields.");
+      return;
+    }
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -786,6 +795,13 @@ const Login = () => {
     e.preventDefault();
     setResetError("");
     setResetSuccess("");
+    setResetSubmitted(true);
+
+    if (!resetEmail.trim() || !resetNewPassword.trim() || resetNewPassword.length < 6) {
+      setResetError("Please correct the errors in the mandatory fields.");
+      return;
+    }
+
     setResetLoading(true);
 
     try {
@@ -799,6 +815,7 @@ const Login = () => {
         setResetSuccess(data.message || "Your password has been reset successfully!");
         setResetEmail("");
         setResetNewPassword("");
+        setResetSubmitted(false);
       } else {
         setResetError(data.error || "Reset failed. Please verify your email.");
       }
@@ -832,23 +849,33 @@ const Login = () => {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Email <span className="text-red-500 font-bold">*</span>
+            </label>
             <input 
               type="email" 
               required 
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+              className={cn(
+                "w-full px-4 py-3 rounded-xl border outline-none transition-all", 
+                (submitted && !email.trim()) 
+                  ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                  : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+              )}
               value={email}
               onChange={e => setEmail(e.target.value)}
             />
           </div>
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium text-slate-700">Password</label>
+              <label className="block text-sm font-medium text-slate-700">
+                Password <span className="text-red-500 font-bold">*</span>
+              </label>
               <button 
                 type="button" 
                 onClick={() => {
                   setResetError("");
                   setResetSuccess("");
+                  setResetSubmitted(false);
                   setShowResetModal(true);
                 }}
                 className="text-xs text-emerald-600 hover:underline font-bold"
@@ -859,7 +886,12 @@ const Login = () => {
             <input 
               type="password" 
               required 
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+              className={cn(
+                "w-full px-4 py-3 rounded-xl border outline-none transition-all", 
+                (submitted && !password.trim()) 
+                  ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                  : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+              )}
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
@@ -896,24 +928,38 @@ const Login = () => {
 
             <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Email Address <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input 
                   type="email" 
                   required 
                   placeholder="name@example.com"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className={cn(
+                    "w-full px-4 py-3 rounded-xl border outline-none transition-all", 
+                    (resetSubmitted && !resetEmail.trim()) 
+                      ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                      : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                  )}
                   value={resetEmail}
                   onChange={e => setResetEmail(e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  New Password <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input 
                   type="password" 
                   required 
                   minLength={6}
                   placeholder="At least 6 characters"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className={cn(
+                    "w-full px-4 py-3 rounded-xl border outline-none transition-all", 
+                    (resetSubmitted && (!resetNewPassword.trim() || resetNewPassword.length < 6)) 
+                      ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                      : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                  )}
                   value={resetNewPassword}
                   onChange={e => setResetNewPassword(e.target.value)}
                 />
@@ -938,6 +984,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<'candidate' | 'employer'>('candidate');
   const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
 
@@ -950,6 +997,13 @@ const Register = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setSubmitted(true);
+
+    if (!email.trim() || !password.trim()) {
+      setError("Please fill out all mandatory fields.");
+      return;
+    }
+
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -982,7 +1036,7 @@ const Register = () => {
     <div className="pt-32 pb-24 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
         <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Create Account</h2>
-        {error && <p className="text-red-600 mb-4 text-center text-sm">{error}</p>}
+        {error && <p className="text-red-600 mb-4 text-center text-sm font-semibold">{error}</p>}
         <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
           <button 
             className={cn("flex-1 py-2 rounded-lg font-bold transition-all", role === 'candidate' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500")}
@@ -999,26 +1053,40 @@ const Register = () => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Email <span className="text-red-500 font-bold">*</span>
+            </label>
             <input 
               type="email" 
               required 
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+              className={cn(
+                "w-full px-4 py-3 rounded-xl border outline-none transition-all", 
+                (submitted && !email.trim()) 
+                  ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                  : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+              )}
               value={email}
               onChange={e => setEmail(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Password <span className="text-red-500 font-bold">*</span>
+            </label>
             <input 
               type="password" 
               required 
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+              className={cn(
+                "w-full px-4 py-3 rounded-xl border outline-none transition-all", 
+                (submitted && !password.trim()) 
+                  ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                  : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+              )}
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
           </div>
-          <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all">
+          <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all cursor-pointer">
             Register as {role === 'candidate' ? 'Candidate' : 'Employer'}
           </button>
         </form>
@@ -1046,6 +1114,7 @@ const CandidateDashboard = () => {
   });
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     if (user?.role === 'candidate') {
@@ -1080,6 +1149,7 @@ const CandidateDashboard = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setSubmitted(true);
     
     if (!profile.full_name.trim()) {
       setError("Please enter your full name.");
@@ -1174,23 +1244,37 @@ const CandidateDashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Full Name <span className="text-red-500 font-bold">*</span>
+              </label>
               <input 
                 type="text" 
                 required 
                 placeholder="Enter your full name"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                className={cn(
+                  "w-full px-4 py-3 rounded-xl border outline-none transition-all",
+                  (submitted && !profile.full_name.trim()) 
+                    ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                    : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                )}
                 value={profile.full_name}
                 onChange={e => setProfile({...profile, full_name: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Phone</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Phone <span className="text-red-500 font-bold">*</span>
+              </label>
               <input 
                 type="tel" 
                 required
                 placeholder="e.g. (225) 555-0199"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                className={cn(
+                  "w-full px-4 py-3 rounded-xl border outline-none transition-all",
+                  (submitted && !profile.phone.trim()) 
+                    ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                    : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                )}
                 value={profile.phone}
                 onChange={e => setProfile({...profile, phone: e.target.value})}
               />
@@ -1209,8 +1293,18 @@ const CandidateDashboard = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Specialties</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Specialties <span className="text-red-500 font-bold">*</span>
+              {submitted && profile.role_specialties.length === 0 && (
+                <span className="text-red-500 text-xs ml-2 font-normal">(Please select at least one specialty)</span>
+              )}
+            </label>
+            <div className={cn(
+              "grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl border transition-all",
+              (submitted && profile.role_specialties.length === 0)
+                ? "border-red-500 bg-red-50/10"
+                : "border-slate-100"
+            )}>
               {ROLE_CATEGORIES.map(role => (
                 <label key={role} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
                   <input 
@@ -1231,11 +1325,18 @@ const CandidateDashboard = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Experience Summary</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Experience Summary <span className="text-red-500 font-bold">*</span>
+            </label>
             <textarea 
               rows={4}
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
+              className={cn(
+                "w-full px-4 py-3 rounded-xl border outline-none transition-all",
+                (submitted && !profile.experience_summary.trim()) 
+                  ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200" 
+                  : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+              )}
               value={profile.experience_summary}
               onChange={e => setProfile({...profile, experience_summary: e.target.value})}
               placeholder="Briefly describe your healthcare administrative background..."
@@ -1325,6 +1426,8 @@ const EmployerDashboard = () => {
   // Profile save feedback states
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const [profileSubmitted, setProfileSubmitted] = useState(false);
+  const [jobSubmitted, setJobSubmitted] = useState(false);
   
   // Invoice PayPal payment state
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<any>(null);
@@ -1396,6 +1499,7 @@ const EmployerDashboard = () => {
     e.preventDefault();
     setProfileError("");
     setProfileSuccess(false);
+    setProfileSubmitted(true);
 
     if (!profile.company_name.trim() || profile.company_name === "Pending Setup") {
       setProfileError("Please enter a valid Company Name.");
@@ -1440,6 +1544,10 @@ const EmployerDashboard = () => {
 
   const handleJobSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setJobSubmitted(true);
+    if (!job.title.trim() || !job.description.trim()) {
+      return;
+    }
     const res = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1448,6 +1556,7 @@ const EmployerDashboard = () => {
     if (res.ok) {
       setShowJobForm(false);
       setJob({ title: "", description: "", parish: ALLOWED_PARISHES[0], role_category: ROLE_CATEGORIES[0] });
+      setJobSubmitted(false);
       fetchData();
     }
   };
@@ -1481,42 +1590,70 @@ const EmployerDashboard = () => {
             )}
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Company Name</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Company Name <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input 
                   type="text" 
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
+                  className={cn(
+                    "w-full px-4 py-2 rounded-lg border outline-none transition-all",
+                    (profileSubmitted && (!profile.company_name.trim() || profile.company_name === "Pending Setup"))
+                      ? "border-red-500 bg-red-50/30 focus:ring-1 focus:ring-red-200"
+                      : "border-slate-200 focus:border-emerald-500"
+                  )}
                   value={profile.company_name}
                   onChange={e => setProfile({...profile, company_name: e.target.value})}
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contact Name</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Contact Name <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input 
                   type="text" 
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
+                  className={cn(
+                    "w-full px-4 py-2 rounded-lg border outline-none transition-all",
+                    (profileSubmitted && (!profile.contact_name.trim() || profile.contact_name === "Pending Setup"))
+                      ? "border-red-500 bg-red-50/30 focus:ring-1 focus:ring-red-200"
+                      : "border-slate-200 focus:border-emerald-500"
+                  )}
                   value={profile.contact_name}
                   onChange={e => setProfile({...profile, contact_name: e.target.value})}
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Phone Number <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input 
                   type="tel" 
                   placeholder="(225) 555-0199"
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
+                  className={cn(
+                    "w-full px-4 py-2 rounded-lg border outline-none transition-all",
+                    (profileSubmitted && !profile.phone.trim())
+                      ? "border-red-500 bg-red-50/30 focus:ring-1 focus:ring-red-200"
+                      : "border-slate-200 focus:border-emerald-500"
+                  )}
                   value={profile.phone}
                   onChange={e => setProfile({...profile, phone: e.target.value})}
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Company Website</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Company Website <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input 
                   type="url" 
                   placeholder="https://example.com"
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-500 transition-all"
+                  className={cn(
+                    "w-full px-4 py-2 rounded-lg border outline-none transition-all",
+                    (profileSubmitted && (!profile.website.trim() || !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(profile.website.trim())))
+                      ? "border-red-500 bg-red-50/30 focus:ring-1 focus:ring-red-200"
+                      : "border-slate-200 focus:border-emerald-500"
+                  )}
                   value={profile.website}
                   onChange={e => setProfile({...profile, website: e.target.value})}
                   required
@@ -1602,11 +1739,18 @@ const EmployerDashboard = () => {
                 <form onSubmit={handleJobSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Job Title</label>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Job Title <span className="text-red-500 font-bold">*</span>
+                      </label>
                       <input 
                         type="text" 
                         required 
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
+                        className={cn(
+                          "w-full px-4 py-3 rounded-xl border outline-none transition-all",
+                          (jobSubmitted && !job.title.trim())
+                            ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200"
+                            : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                        )}
                         value={job.title}
                         onChange={e => setJob({...job, title: e.target.value})}
                         placeholder="e.g. Patient Intake Coordinator"
@@ -1624,11 +1768,18 @@ const EmployerDashboard = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Description <span className="text-red-500 font-bold">*</span>
+                    </label>
                     <textarea 
                       rows={4}
                       required 
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border outline-none transition-all",
+                        (jobSubmitted && !job.description.trim())
+                          ? "border-red-500 bg-red-50/30 focus:ring-2 focus:ring-red-200"
+                          : "border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                      )}
                       value={job.description}
                       onChange={e => setJob({...job, description: e.target.value})}
                     />
