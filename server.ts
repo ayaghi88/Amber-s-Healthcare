@@ -228,7 +228,7 @@ async function startServer() {
     const normalizedEmail = (email || "").trim().toLowerCase();
     logDebug(`Register attempt: ${normalizedEmail} as ${role}`);
     if (!['candidate', 'employer'].includes(role)) {
-      logDebug(`Register failed: Invalid role - ${role}`);
+      logDebug(`Register rejected: Invalid role - ${role}`);
       return res.status(400).json({ error: "Invalid role" });
     }
 
@@ -247,7 +247,7 @@ async function startServer() {
       logDebug(`Register success: ${normalizedEmail}`);
       res.json({ token, user: { id: userId, email: normalizedEmail, role } });
     } catch (err: any) {
-      logDebug(`Register error: ${err.message}`);
+      logDebug(`Register err: ${err.message}`);
       res.status(400).json({ error: err.message });
     }
   });
@@ -258,13 +258,13 @@ async function startServer() {
     try {
       const user = findUserByEmail(email);
       if (!user) {
-        logDebug(`Login failed: User not found - ${email}`);
+        logDebug(`Login rejected: User not found - ${email}`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
       
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        logDebug(`Login failed: Password mismatch - ${email}`);
+        logDebug(`Login rejected: Password mismatch - ${email}`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
@@ -273,7 +273,7 @@ async function startServer() {
       logDebug(`Login success: ${email} (resolved to: ${user.email}, role: ${user.role})`);
       res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (err: any) {
-      logDebug(`Login error: ${err.message}`);
+      logDebug(`Login err: ${err.message}`);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -291,7 +291,7 @@ async function startServer() {
     try {
       const user = findUserByEmail(email);
       if (!user) {
-        logDebug(`Reset password failed: User not found - ${email}`);
+        logDebug(`Reset password rejected: User not found - ${email}`);
         return res.status(404).json({ error: "No account found with this email address." });
       }
 
@@ -300,7 +300,7 @@ async function startServer() {
       logDebug(`Reset password success: ${email} (resolved to: ${user.email})`);
       res.json({ success: true, message: "Your password has been successfully reset. You can now log in with your new password!" });
     } catch (err: any) {
-      logDebug(`Reset password error: ${err.message}`);
+      logDebug(`Reset password err: ${err.message}`);
       res.status(500).json({ error: err.message });
     }
   });
@@ -308,6 +308,56 @@ async function startServer() {
   app.post("/api/auth/logout", (req, res) => {
     res.clearCookie("token");
     res.json({ success: true });
+  });
+
+  // Secure endpoint to let any user update their login credentials (email, password)
+  app.post("/api/auth/update-account", authenticate, async (req: any, res) => {
+    const { email, currentPassword, newPassword } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required." });
+    }
+
+    try {
+      const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id) as any;
+      if (!user) {
+        return res.status(404).json({ error: "User not found." });
+      }
+
+      // Check if email is already taken by another user
+      if (email.toLowerCase().trim() !== user.email.toLowerCase()) {
+        const emailTaken = db.prepare("SELECT id FROM users WHERE LOWER(email) = ? AND id != ?").get(email.toLowerCase().trim(), req.user.id);
+        if (emailTaken) {
+          return res.status(400).json({ error: "This email address is already registered to another account." });
+        }
+      }
+
+      // If they want to change password, verify current password first
+      let hashedPassword = user.password;
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: "Current password is required to set a new password." });
+        }
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ error: "Incorrect current password." });
+        }
+        hashedPassword = await bcrypt.hash(newPassword, 10);
+      }
+
+      // Update users table
+      db.prepare(`
+        UPDATE users
+        SET email = ?, password = ?
+        WHERE id = ?
+      `).run(email.toLowerCase().trim(), hashedPassword, req.user.id);
+
+      // Back up database immediately to persist the change
+      backupDatabase();
+
+      res.json({ success: true, message: "Account login details updated successfully!" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.get("/api/me", authenticate, (req: any, res) => {
@@ -341,7 +391,7 @@ async function startServer() {
       JOIN candidates c ON i.candidate_id = c.id
       JOIN job_postings j ON i.job_id = j.id
       LEFT JOIN hire_confirmations h ON i.id = h.introduction_id
-      WHERE j.employer_id = ?
+      WHERE j.employer_id = ? AND i.status = 'confirmed_match'
     `).all(employer.id);
     res.json(intros);
   });
@@ -425,6 +475,90 @@ async function startServer() {
       res.json(notifications);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin Potential Matches API: Fetches all unapproved applications (potential_matches)
+  app.get("/api/admin/potential-matches", authenticate, (req: any, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+    try {
+      const potentials = db.prepare(`
+        SELECT i.*, j.title as job_title, j.parish as job_parish, e.company_name, c.full_name as candidate_name, c.parish as candidate_parish
+        FROM introductions i
+        JOIN job_postings j ON i.job_id = j.id
+        JOIN employers e ON j.employer_id = e.id
+        JOIN candidates c ON i.candidate_id = c.id
+        WHERE i.status = 'potential_match'
+        ORDER BY i.introduced_at DESC
+      `).all();
+      res.json(potentials);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin endpoint to CONFIRM a potential match and send confirmed notifications to both parties
+  app.post("/api/introductions/:id/confirm", authenticate, (req: any, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+    const introId = req.params.id;
+    try {
+      db.prepare(`
+        UPDATE introductions
+        SET status = 'confirmed_match'
+        WHERE id = ?
+      `).run(introId);
+
+      const intro = db.prepare(`
+        SELECT i.*, j.title as job_title, j.parish as job_parish, e.company_name, e.contact_name, eu.email as employer_email, e.phone as employer_phone, c.full_name as candidate_name, cu.email as candidate_email, c.phone as candidate_phone, c.contact_preference, c.interview_preference
+        FROM introductions i
+        JOIN job_postings j ON i.job_id = j.id
+        JOIN employers e ON j.employer_id = e.id
+        JOIN users eu ON e.user_id = eu.id
+        JOIN candidates c ON i.candidate_id = c.id
+        JOIN users cu ON c.user_id = cu.id
+        WHERE i.id = ?
+      `).get(introId) as any;
+
+      if (intro) {
+        const formattedNote = intro.note && intro.note.trim() ? intro.note.trim() : 'Our placement team reviewed and confirmed you are a perfect fit!';
+
+        // 1. Alert Candidate: "confirmed match"
+        const candEmailSubject = `Confirmed Match! You've been introduced to ${intro.company_name} - ${intro.job_title}`;
+        const candEmailMsg = `Hi ${intro.candidate_name},\n\nWe have exciting news! Your application match has been reviewed and officially **CONFIRMED** for the position of **${intro.job_title}** with **${intro.company_name}**!\n\nDetails:\n- Interview Preference: ${intro.interview_preference || 'Standard Formats'}\n- Matching Note: "${formattedNote}"\n\nPlease log into your Candidate Dashboard to review details and prepare for employer outreach.\n\nCongratulations on this confirmed match!\nAmber's Healthcare Team`;
+        dispatchNotification(intro.candidate_email, intro.candidate_phone, 'both', candEmailSubject, candEmailMsg);
+
+        // 2. Alert Employer: "confirmed match"
+        const empEmailSubject = `Confirmed Match: ${intro.candidate_name} introduced for ${intro.job_title}`;
+        const empEmailMsg = `Hello ${intro.contact_name},\n\nOur placement team has successfully reviewed and **CONFIRMED** a high-quality match for your job opening: **${intro.job_title}**!\n\nCandidate details:\n- Name: ${intro.candidate_name}\n- Parish: ${intro.candidate_parish || intro.job_parish}\n- Contact Preference: ${intro.contact_preference || 'Email'}\n- Pre-selected Interview format preference: ${intro.interview_preference || 'Standard Formats'}\n- Cover Note: "${formattedNote}"\n\nPlease log in to your Employer Dashboard under 'Matched Candidates' to coordinate scheduling and contact them directly!\n\nThank you,\nAmber's Healthcare Team`;
+        dispatchNotification(intro.employer_email, intro.employer_phone, 'email', empEmailSubject, empEmailMsg);
+      }
+
+      // Back up database immediately to persist status change
+      backupDatabase();
+
+      res.json({ success: true, message: "Match successfully confirmed and notifications sent!" });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  // Admin endpoint to REJECT/DECLINE a potential match
+  app.post("/api/introductions/:id/reject", authenticate, (req: any, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+    const introId = req.params.id;
+    try {
+      db.prepare(`
+        UPDATE introductions
+        SET status = 'declined'
+        WHERE id = ?
+      `).run(introId);
+
+      // Back up database immediately to persist status change
+      backupDatabase();
+
+      res.json({ success: true, message: "Match declined successfully." });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
     }
   });
 
@@ -658,14 +792,31 @@ async function startServer() {
   // --- Job Routes ---
   app.post("/api/jobs", authenticate, (req: any, res) => {
     if (req.user.role !== 'employer') return res.status(403).json({ error: "Forbidden" });
-    const employer: any = db.prepare("SELECT id, accepted_agreement_at FROM employers WHERE user_id = ?").get(req.user.id);
+    const employer: any = db.prepare("SELECT id, contact_name, phone, accepted_agreement_at FROM employers WHERE user_id = ?").get(req.user.id);
     if (!employer || !employer.accepted_agreement_at) return res.status(403).json({ error: "Agreement not accepted" });
 
-    const { title, description, parish, role_category } = req.body;
-    const id = uuidv4();
-    db.prepare("INSERT INTO job_postings (id, employer_id, title, description, parish, role_category) VALUES (?, ?, ?, ?, ?, ?)").run(
-      id, employer.id, title, description, parish, role_category
+    const { title, description, parish, role_category, interview_formats } = req.body;
+    const formatsStr = JSON.stringify(interview_formats && Array.isArray(interview_formats) && interview_formats.length > 0
+      ? interview_formats
+      : ["Virtual Video Call", "Phone-Only Interview", "Written Questionnaire / Email Interview", "Virtual Video Call (Questions provided 48h in advance)"]
     );
+    const id = uuidv4();
+    db.prepare("INSERT INTO job_postings (id, employer_id, title, description, parish, role_category, interview_formats) VALUES (?, ?, ?, ?, ?, ?, ?)").run(
+      id, employer.id, title, description, parish, role_category, formatsStr
+    );
+
+    // Send confirmation email to employer who posted the job
+    try {
+      const empUser = db.prepare("SELECT email FROM users WHERE id = ?").get(req.user.id) as any;
+      if (empUser) {
+        const subject = `Job Posting Published: ${title}`;
+        const message = `Hello ${employer.contact_name || 'Employer'},\n\nYour new remote job opening for **${title}** has been successfully published!\n\nDetails:\n- Category: ${role_category}\n- Parish: ${parish}\n- Interview formats configured: ${JSON.parse(formatsStr).join(', ')}\n\nWe will notify you immediately once candidate matches are identified or when applications are submitted.\n\nThank you for choosing Amber's Healthcare!`;
+        dispatchNotification(empUser.email, employer.phone, 'email', subject, message);
+      }
+    } catch (notifyErr: any) {
+      logDebug(`Issue sending job post notifications: ${notifyErr.message}`);
+    }
+
     res.json({ id });
   });
 
@@ -701,9 +852,10 @@ async function startServer() {
 
       const appNote = note && note.trim() ? note.trim() : 'Candidate expressed interest directly via the job board.';
 
+      // Insert as a potential_match
       db.prepare(`
-        INSERT INTO introductions (id, job_id, candidate_id, note)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO introductions (id, job_id, candidate_id, note, status)
+        VALUES (?, ?, ?, ?, 'potential_match')
       `).run(id, jobId, candidate.id, appNote);
 
       // Send match notifications when candidate applies directly
@@ -719,26 +871,21 @@ async function startServer() {
         const candUser = db.prepare("SELECT email FROM users WHERE id = ?").get(req.user.id) as any;
 
         if (job) {
-          // 1. Notify Employer via Email
-          const empSubject = `New Applicant for ${job.title}: ${candidate.full_name}`;
-          const empMsg = `Hello ${job.contact_name},\n\nA local candidate, ${candidate.full_name}, has expressed direct interest in your job posting: **${job.title}**.\n\nCover Note: "${appNote}"\n\nPlease log in to Amber's Healthcare to review their complete candidate profile and schedule an interview!`;
-          dispatchNotification(job.employer_email, job.employer_phone, 'email', empSubject, empMsg);
-
-          // 2. Notify Admin via Email
+          // 1. Notify Admin via Email about potential match
           const adminUsers = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
           for (const admin of adminUsers) {
-            const adminSubject = `Candidate Direct Application: ${candidate.full_name} applied to ${job.title}`;
-            const adminMsg = `Admin Alert:\nCandidate **${candidate.full_name}** has applied directly to job posting **${job.title}** at **${job.company_name}**.\n\nCover Note: "${appNote}"`;
+            const adminSubject = `Potential Match Alert: ${candidate.full_name} applied to ${job.title}`;
+            const adminMsg = `Admin Alert:\nCandidate **${candidate.full_name}** has expressed interest in job posting **${job.title}** at **${job.company_name}**.\n\nThis is a potential match. Please log into the Admin Dashboard under 'Potential Matches' to review and confirm or decline this match.\n\nCover Note: "${appNote}"`;
             dispatchNotification(admin.email, null, 'email', adminSubject, adminMsg);
           }
           
-          // 3. Notify Candidate via Email
-          const candSubject = `Application Submitted: ${job.title} at ${job.company_name}`;
-          const candMsg = `Hi ${candidate.full_name},\n\nYou have successfully expressed interest in the position of **${job.title}** at **${job.company_name}**.\n\nYour profile has been shared with the employer. We will notify you when they review your application.`;
+          // 2. Notify Candidate via Email
+          const candSubject = `Application Received: ${job.title} at ${job.company_name}`;
+          const candMsg = `Hi ${candidate.full_name},\n\nYou have successfully expressed interest in the position of **${job.title}** at **${job.company_name}**.\n\nOur placement team is currently reviewing your profile to confirm this match with the employer. We will send you a confirmation email once the match is officially confirmed!\n\nThank you,\nAmber's Healthcare Team`;
           dispatchNotification(candUser.email, candidate.phone, 'email', candSubject, candMsg);
         }
       } catch (notifyErr: any) {
-        logDebug(`Error sending application notifications: ${notifyErr.message}`);
+        logDebug(`Issue sending application notifications: ${notifyErr.message}`);
       }
 
       res.json({ success: true, message: "Interest expressed successfully!" });
@@ -758,6 +905,30 @@ async function startServer() {
     res.json(applications.map(app => app.job_id));
   });
 
+  // Get all active matched jobs/introductions for the logged in candidate
+  app.get("/api/candidates/matches", authenticate, (req: any, res) => {
+    if (req.user.role !== 'candidate') return res.status(403).json({ error: "Forbidden" });
+    try {
+      const candidate = db.prepare("SELECT id FROM candidates WHERE user_id = ?").get(req.user.id) as any;
+      if (!candidate) return res.json([]);
+      
+      const matches = db.prepare(`
+        SELECT i.id as introduction_id, i.status as match_status, i.introduced_at, i.note as match_note,
+               j.id as job_id, j.title as job_title, j.description as job_description, j.parish as job_parish, j.role_category,
+               e.company_name
+        FROM introductions i
+        JOIN job_postings j ON i.job_id = j.id
+        JOIN employers e ON j.employer_id = e.id
+        WHERE i.candidate_id = ? AND i.status != 'declined'
+        ORDER BY i.introduced_at DESC
+      `).all(candidate.id);
+      
+      res.json(matches);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // --- Referral Routes ---
   app.post("/api/referrals", (req, res) => {
     const { referrer_name, referrer_email, candidate_name, candidate_email } = req.body;
@@ -770,6 +941,30 @@ async function startServer() {
         INSERT INTO referrals (id, referrer_name, referrer_email, candidate_name, candidate_email, status, employer_notes)
         VALUES (?, ?, ?, ?, ?, 'pending', '')
       `).run(id, referrer_name.trim(), referrer_email.trim(), candidate_name.trim(), candidate_email.trim());
+
+      // Send confirmation email to referrer, referred candidate, and admin
+      try {
+        // 1. Notify Referrer
+        const referrerSubject = `Referral Received: ${candidate_name}`;
+        const referrerMsg = `Hi ${referrer_name.trim()},\n\nThank you for referring **${candidate_name.trim()}** to Amber's Healthcare!\n\nYour referral has been successfully registered. We will monitor their matches and keep you updated on their status. If they are placed, we will notify you regarding any referral bonuses!\n\nThank you for supporting our healthcare community in Baton Rouge.`;
+        dispatchNotification(referrer_email.trim(), null, 'email', referrerSubject, referrerMsg);
+
+        // 2. Notify Candidate (Referred person)
+        const candSubject = `You have been referred to Amber's Healthcare by ${referrer_name.trim()}`;
+        const candMsg = `Hi ${candidate_name.trim()},\n\nExciting news! **${referrer_name.trim()}** has referred you for remote administrative or billing positions with Amber's Healthcare in the Baton Rouge region.\n\nWe connect local talent with trusted healthcare employers. To activate your candidate profile and start receiving matches, please complete your registration on our platform.\n\nLooking forward to working with you!`;
+        dispatchNotification(candidate_email.trim(), null, 'email', candSubject, candMsg);
+
+        // 3. Notify Admin
+        const adminUsers = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
+        for (const admin of adminUsers) {
+          const adminSubject = `New Referral: ${candidate_name} by ${referrer_name}`;
+          const adminMsg = `Admin Alert:\nA new referral has been submitted:\n- Referrer: ${referrer_name} (${referrer_email})\n- Candidate: ${candidate_name} (${candidate_email})`;
+          dispatchNotification(admin.email, null, 'email', adminSubject, adminMsg);
+        }
+      } catch (notifyErr: any) {
+        logDebug(`Issue sending referral notifications: ${notifyErr.message}`);
+      }
+
       res.json({ success: true, message: "Referral submitted successfully! Thank you for referring healthcare talent to our Baton Rouge community." });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -818,7 +1013,7 @@ async function startServer() {
     }
     const id = uuidv4();
     try {
-      db.prepare("INSERT INTO introductions (id, job_id, candidate_id, note) VALUES (?, ?, ?, ?)").run(id, job_id, candidate_id, note);
+      db.prepare("INSERT INTO introductions (id, job_id, candidate_id, note, status) VALUES (?, ?, ?, ?, 'confirmed_match')").run(id, job_id, candidate_id, note);
       
       // Send match notifications to both candidate and employer
       try {
@@ -851,7 +1046,7 @@ async function startServer() {
           dispatchNotification(job.employer_email, job.employer_phone, 'email', empEmailSubject, empEmailMsg);
         }
       } catch (notifyErr: any) {
-        logDebug(`Error sending match notifications: ${notifyErr.message}`);
+        logDebug(`Issue sending match notifications: ${notifyErr.message}`);
       }
 
       res.json({ id });

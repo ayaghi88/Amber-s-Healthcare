@@ -38,6 +38,13 @@ import {
 import { cn } from "./lib/utils";
 import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
 
+export const INTERVIEW_FORMATS_LIST = [
+  "Virtual Video Call",
+  "Phone-Only Interview",
+  "Written Questionnaire / Email Interview",
+  "Virtual Video Call (Questions provided 48h in advance)"
+];
+
 // Custom fetch helper to support Bearer token authentication in iframe environments without modifying read-only window.fetch
 const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const token = localStorage.getItem("token");
@@ -115,6 +122,12 @@ const Navbar = () => {
                 >
                   Dashboard
                 </Link>
+                <Link 
+                  to="/settings" 
+                  className="text-slate-600 hover:text-emerald-600 font-medium transition-colors"
+                >
+                  Account Settings
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all font-medium"
@@ -164,6 +177,13 @@ const Navbar = () => {
                     onClick={() => setIsOpen(false)}
                   >
                     Dashboard
+                  </Link>
+                  <Link 
+                    to="/settings" 
+                    className="block text-lg font-medium text-slate-700" 
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Account Settings
                   </Link>
                   <button onClick={handleLogout} className="block w-full text-left text-lg font-medium text-red-600">Logout</button>
                 </>
@@ -728,6 +748,7 @@ export default function App() {
               <Route path="/agreement" element={<EmployerAgreement />} />
               <Route path="/terms" element={<CandidateTerms />} />
               <Route path="/refer" element={<ReferProgram />} />
+              <Route path="/settings" element={<AccountSettings />} />
             </Routes>
           </main>
           <Footer />
@@ -736,6 +757,165 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+const AccountSettings = () => {
+  const { user } = useAuth();
+  const [email, setEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setEmail(user.email || "");
+    }
+  }, [user]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!currentPassword) {
+      setError("Please verify your identity by entering your current password.");
+      return;
+    }
+
+    if (newPassword && newPassword !== confirmPassword) {
+      setError("New password and confirm password do not match.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/update-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          currentPassword,
+          newPassword: newPassword || undefined
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess("Account information updated successfully!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setError(data.error || "Failed to update account information.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("An unexpected network error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="pt-32 text-center text-slate-600 font-medium">
+        Please sign in to view account settings.
+      </div>
+    );
+  }
+
+  return (
+    <div className="pt-32 pb-24 max-w-xl mx-auto px-4">
+      <div className="bg-white rounded-[32px] shadow-xl border border-slate-200 overflow-hidden">
+        <div className="p-8 bg-slate-900 text-white">
+          <h1 className="text-2xl font-extrabold tracking-tight">Account Settings</h1>
+          <p className="text-slate-400 text-sm mt-1">Manage your registered email and secure password updates.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          {error && (
+            <div className="p-4 bg-rose-50 border border-rose-100 text-rose-700 text-sm rounded-2xl font-semibold">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm rounded-2xl font-semibold">
+              ✨ {success}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Registered Email Address</label>
+              <input 
+                type="email"
+                required
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-800 text-sm"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="border-t border-slate-100 pt-4">
+              <h3 className="text-sm font-bold text-slate-900 mb-3">Update Password (Optional)</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-600 mb-2">New Password</label>
+                  <input 
+                    type="password"
+                    placeholder="Leave blank to keep current password"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-sm"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-600 mb-2">Confirm New Password</label>
+                  <input 
+                    type="password"
+                    placeholder="Leave blank to keep current password"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-sm"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3">
+              <label className="block text-sm font-bold text-slate-700">
+                Confirm Current Password <span className="text-red-500 font-bold">*</span>
+              </label>
+              <p className="text-xs text-slate-500">For security reasons, you must verify your current password to save changes.</p>
+              <input 
+                type="password"
+                required
+                placeholder="Enter current password"
+                className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-sm"
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-100 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>{loading ? "Saving Changes..." : "Save Account Settings"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 // --- Auth Pages ---
 
@@ -1125,6 +1305,7 @@ const CandidateDashboard = () => {
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [matches, setMatches] = useState<any[]>([]);
 
   useEffect(() => {
     if (user?.role === 'candidate') {
@@ -1134,6 +1315,13 @@ const CandidateDashboard = () => {
           if (Array.isArray(data)) setNotifications(data);
         })
         .catch(err => console.error("Error fetching notifications", err));
+
+      fetch("/api/candidates/matches")
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          if (Array.isArray(data)) setMatches(data);
+        })
+        .catch(err => console.error("Error fetching matches", err));
 
       fetch("/api/candidates/me")
         .then(res => res.ok ? res.json() : null)
@@ -1408,6 +1596,52 @@ const CandidateDashboard = () => {
         </form>
       </div>
 
+      {isProfileComplete && (
+        <div className="mt-8 bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+          <div className="p-6 bg-slate-950 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-emerald-400" />
+              <h2 className="text-lg font-bold">My Job Matches ({matches.length})</h2>
+            </div>
+          </div>
+          <div className="p-6 space-y-4">
+            {matches.map(m => (
+              <div key={m.introduction_id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-all space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">{m.job_title}</h3>
+                    <p className="text-sm text-slate-500 font-medium">{m.company_name} • {m.job_parish} Parish</p>
+                  </div>
+                  <span className={cn(
+                    "px-3 py-1 rounded-full text-xs font-bold border self-start sm:self-center",
+                    m.match_status === 'confirmed_match' 
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                      : "bg-amber-50 text-amber-700 border-amber-200"
+                  )}>
+                    {m.match_status === 'confirmed_match' ? '✓ Confirmed Match' : '⏳ Potential Match (Under Review)'}
+                  </span>
+                </div>
+                
+                {m.match_note && (
+                  <div className="text-xs text-slate-600 bg-white p-3.5 rounded-xl border border-slate-100 leading-relaxed italic">
+                    " {m.match_note} "
+                  </div>
+                )}
+                
+                <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                  Matched on {new Date(m.introduced_at).toLocaleDateString()} at {new Date(m.introduced_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </div>
+              </div>
+            ))}
+            {matches.length === 0 && (
+              <div className="p-12 text-center text-slate-400 text-sm">
+                No active job matches yet. As soon as our placement team identifies a match or you express interest, they will appear here!
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-8 bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -1456,7 +1690,8 @@ const EmployerDashboard = () => {
     title: "",
     description: "",
     parish: ALLOWED_PARISHES[0],
-    role_category: ROLE_CATEGORIES[0]
+    role_category: ROLE_CATEGORIES[0],
+    interview_formats: ["Virtual Video Call"] as string[]
   });
   const [jobs, setJobs] = useState<any[]>([]);
   const [intros, setIntros] = useState<any[]>([]);
@@ -1610,7 +1845,7 @@ const EmployerDashboard = () => {
     });
     if (res.ok) {
       setShowJobForm(false);
-      setJob({ title: "", description: "", parish: ALLOWED_PARISHES[0], role_category: ROLE_CATEGORIES[0] });
+      setJob({ title: "", description: "", parish: ALLOWED_PARISHES[0], role_category: ROLE_CATEGORIES[0], interview_formats: ["Virtual Video Call"] });
       setJobSubmitted(false);
       fetchData();
     }
@@ -1839,6 +2074,31 @@ const EmployerDashboard = () => {
                       onChange={e => setJob({...job, description: e.target.value})}
                     />
                   </div>
+                  
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                    <label className="block text-sm font-bold text-slate-700">Available Interview Formats</label>
+                    <p className="text-xs text-slate-500">Please select which assessment formats your organization can accommodate for this position. Candidates will choose their preference from this list.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {INTERVIEW_FORMATS_LIST.map(format => (
+                        <label key={format} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-100 cursor-pointer text-xs font-semibold text-slate-700 bg-white border border-slate-100">
+                          <input 
+                            type="checkbox"
+                            checked={job.interview_formats?.includes(format)}
+                            onChange={e => {
+                              const list = job.interview_formats || [];
+                              const updated = e.target.checked 
+                                ? [...list, format] 
+                                : list.filter(f => f !== format);
+                              setJob({...job, interview_formats: updated});
+                            }}
+                            className="w-4 h-4 text-emerald-600 rounded border-slate-300"
+                          />
+                          <span>{format}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-slate-500 italic">"Direct-hire recruiting only. We do not provide staffing."</p>
                     <button type="submit" className="px-8 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all">
@@ -2294,6 +2554,23 @@ const EmployerDashboard = () => {
   );
 };
 
+const getJobFormats = (job: any): string[] => {
+  if (!job) return INTERVIEW_FORMATS_LIST;
+  let formats = job.interview_formats;
+  if (!formats) return INTERVIEW_FORMATS_LIST;
+  if (typeof formats === "string") {
+    try {
+      formats = JSON.parse(formats);
+    } catch (e) {
+      formats = formats.split(",").map((s: string) => s.trim());
+    }
+  }
+  if (Array.isArray(formats) && formats.length > 0) {
+    return formats;
+  }
+  return INTERVIEW_FORMATS_LIST;
+};
+
 const JobBoard = () => {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<any[]>([]);
@@ -2350,11 +2627,14 @@ const JobBoard = () => {
       return;
     }
     setApplyingJob(job);
+    const availableFormats = getJobFormats(job);
     setAppForm({
       note: "",
       phone: candidateProfile?.phone || "",
       contact_preference: candidateProfile?.contact_preference || "Email",
-      interview_preference: candidateProfile?.interview_preference || "Virtual Video Call"
+      interview_preference: availableFormats.includes(candidateProfile?.interview_preference)
+        ? candidateProfile.interview_preference
+        : (availableFormats[0] || "Virtual Video Call")
     });
   };
 
@@ -2552,13 +2832,13 @@ const JobBoard = () => {
                       Interview Preference
                     </label>
                     <select 
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
                       value={appForm.interview_preference}
                       onChange={e => setAppForm({...appForm, interview_preference: e.target.value})}
                     >
-                      <option value="Virtual Video Call">Virtual Video Call</option>
-                      <option value="Phone Interview">Phone Interview</option>
-                      <option value="In-person Interview">In-person Interview</option>
+                      {getJobFormats(applyingJob).map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -2607,10 +2887,11 @@ const AdminDashboard = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [potentials, setPotentials] = useState<any[]>([]);
   
   // Search state and selected active tab
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState<'candidates' | 'employers' | 'jobs' | 'referrals' | 'notifications'>('candidates');
+  const [selectedTab, setSelectedTab] = useState<'candidates' | 'employers' | 'jobs' | 'referrals' | 'potentials' | 'notifications'>('candidates');
   
   // Modals & detail views states
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
@@ -2628,16 +2909,46 @@ const AdminDashboard = () => {
   const [referralStatus, setReferralStatus] = useState("pending");
   const [referralNotes, setReferralNotes] = useState("");
 
+  const handleConfirmMatch = async (id: string) => {
+    try {
+      const res = await fetch(`/api/introductions/${id}/confirm`, { method: "POST" });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to confirm match");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRejectMatch = async (id: string) => {
+    if (!window.confirm("Are you sure you want to decline this match?")) return;
+    try {
+      const res = await fetch(`/api/introductions/${id}/reject`, { method: "POST" });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to decline match");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Fetch all administrative data from corresponding server endpoints
   const fetchData = async () => {
     try {
-      const [statsRes, candRes, jobsRes, empRes, refRes, notifyRes] = await Promise.all([
+      const [statsRes, candRes, jobsRes, empRes, refRes, notifyRes, potRes] = await Promise.all([
         fetch("/api/admin/stats"),
         fetch("/api/admin/candidates"),
         fetch("/api/admin/jobs"),
         fetch("/api/admin/employers"),
         fetch("/api/referrals"),
-        fetch("/api/admin/notifications")
+        fetch("/api/admin/notifications"),
+        fetch("/api/admin/potential-matches")
       ]);
       
       if (statsRes.ok) setStats(await statsRes.json());
@@ -2660,6 +2971,10 @@ const AdminDashboard = () => {
       if (notifyRes.ok) {
         const data = await notifyRes.json();
         if (Array.isArray(data)) setNotifications(data);
+      }
+      if (potRes.ok) {
+        const data = await potRes.json();
+        if (Array.isArray(data)) setPotentials(data);
       }
     } catch (err) {
       console.error("Failed to fetch admin data", err);
@@ -2778,6 +3093,15 @@ const AdminDashboard = () => {
         (n.subject || "").toLowerCase().includes(term) ||
         (n.message || "").toLowerCase().includes(term) ||
         (n.type || "").toLowerCase().includes(term)
+      );
+    } else if (selectedTab === 'potentials') {
+      return potentials.filter(p =>
+        (p.candidate_name || "").toLowerCase().includes(term) ||
+        (p.job_title || "").toLowerCase().includes(term) ||
+        (p.company_name || "").toLowerCase().includes(term) ||
+        (p.candidate_parish || "").toLowerCase().includes(term) ||
+        (p.job_parish || "").toLowerCase().includes(term) ||
+        (p.note || "").toLowerCase().includes(term)
       );
     }
     return [];
@@ -2970,6 +3294,24 @@ const AdminDashboard = () => {
             >
               <Gift className="w-4 h-4" />
               <span>Referrals ({referrals.length})</span>
+            </button>
+
+            <button
+              onClick={() => { setSelectedTab('potentials'); setSearchTerm(''); }}
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer relative",
+                selectedTab === 'potentials' 
+                  ? "bg-emerald-600 text-white shadow-sm" 
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+              <span>Potential Matches ({potentials.length})</span>
+              {potentials.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-extrabold animate-bounce">
+                  {potentials.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -3207,6 +3549,67 @@ const AdminDashboard = () => {
               ))}
               {filteredItems.length === 0 && (
                 <div className="p-16 text-center text-slate-400">No alert notification logs found.</div>
+              )}
+            </div>
+          )}
+
+          {selectedTab === 'potentials' && (
+            <div className="divide-y divide-slate-100">
+              {filteredItems.map((p: any) => (
+                <div key={p.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-slate-50/50 transition-colors">
+                  <div className="space-y-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold uppercase tracking-wider">
+                        ⏳ Potential Match
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-400">
+                        Submitted: {new Date(p.introduced_at).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 pt-1">
+                      <div>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Candidate</p>
+                        <p className="text-base font-extrabold text-slate-900">{p.candidate_name}</p>
+                        <p className="text-xs text-slate-500 font-medium">Parish: {p.candidate_parish || p.job_parish}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Requested Position</p>
+                        <p className="text-base font-extrabold text-slate-900">{p.job_title}</p>
+                        <p className="text-xs text-slate-500 font-medium">{p.company_name} • {p.job_parish} Parish</p>
+                      </div>
+                    </div>
+
+                    {p.note && (
+                      <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-xs text-slate-600 italic">
+                        " {p.note} "
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex sm:flex-col md:flex-row gap-2 md:items-center">
+                    <button
+                      onClick={() => handleRejectMatch(p.id)}
+                      className="px-5 py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer flex-1 md:flex-initial"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Decline</span>
+                    </button>
+                    <button
+                      onClick={() => handleConfirmMatch(p.id)}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-100 cursor-pointer flex-1 md:flex-initial"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Approve & Match</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {filteredItems.length === 0 && (
+                <div className="p-16 text-center text-slate-400 font-medium">
+                  No potential matches currently under review.
+                </div>
               )}
             </div>
           )}

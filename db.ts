@@ -80,6 +80,7 @@ db.exec(`
     parish TEXT NOT NULL,
     role_category TEXT NOT NULL,
     status TEXT DEFAULT 'open',
+    interview_formats TEXT DEFAULT '["Virtual Video Call", "Phone-Only Interview", "Written Questionnaire / Email Interview", "Virtual Video Call (Questions provided 48h in advance)"]',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (employer_id) REFERENCES employers(id)
   );
@@ -90,6 +91,7 @@ db.exec(`
     candidate_id TEXT NOT NULL,
     introduced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     note TEXT,
+    status TEXT DEFAULT 'confirmed_match',
     UNIQUE(job_id, candidate_id),
     FOREIGN KEY (job_id) REFERENCES job_postings(id),
     FOREIGN KEY (candidate_id) REFERENCES candidates(id)
@@ -159,6 +161,16 @@ try {
 try {
   db.exec("ALTER TABLE candidates ADD COLUMN interview_preference TEXT;");
   console.log("Successfully ran migration: Added interview_preference to candidates");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE job_postings ADD COLUMN interview_formats TEXT DEFAULT '[\"Virtual Video Call\", \"Phone-Only Interview\", \"Written Questionnaire / Email Interview\", \"Virtual Video Call (Questions provided 48h in advance)\"]';");
+  console.log("Successfully ran migration: Added interview_formats to job_postings");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE introductions ADD COLUMN status TEXT DEFAULT 'confirmed_match';");
+  console.log("Successfully ran migration: Added status to introductions");
 } catch (e) {}
 
 // --- Workspace JSON Backup & Restore System ---
@@ -238,11 +250,12 @@ export function restoreDatabase() {
     if (backupData.job_postings) {
       db.prepare("DELETE FROM job_postings").run();
       const insertJob = db.prepare(`
-        INSERT INTO job_postings (id, employer_id, title, description, parish, role_category, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO job_postings (id, employer_id, title, description, parish, role_category, status, interview_formats, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       for (const j of backupData.job_postings) {
-        insertJob.run(j.id, j.employer_id, j.title, j.description, j.parish, j.role_category, j.status, j.created_at);
+        const interviewFormats = j.interview_formats || '["Virtual Video Call", "Phone-Only Interview", "Written Questionnaire / Email Interview", "Virtual Video Call (Questions provided 48h in advance)"]';
+        insertJob.run(j.id, j.employer_id, j.title, j.description, j.parish, j.role_category, j.status, interviewFormats, j.created_at);
       }
     }
     
@@ -262,11 +275,11 @@ export function restoreDatabase() {
     if (backupData.introductions) {
       db.prepare("DELETE FROM introductions").run();
       const insertIntro = db.prepare(`
-        INSERT INTO introductions (id, job_id, candidate_id, introduced_at, note)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO introductions (id, job_id, candidate_id, introduced_at, note, status)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
       for (const i of backupData.introductions) {
-        insertIntro.run(i.id, i.job_id, i.candidate_id, i.introduced_at, i.note);
+        insertIntro.run(i.id, i.job_id, i.candidate_id, i.introduced_at, i.note, i.status || 'confirmed_match');
       }
     }
 
@@ -323,7 +336,7 @@ const didRestore = restoreDatabase();
 const jobCount = db.prepare("SELECT COUNT(*) as count FROM job_postings").get().count;
 if (jobCount === 0) {
   try {
-    const employerEmail = "employer@ambershealthcare.com";
+    const employerEmail = "contact@ambershealthcare.com";
     let employerUser = db.prepare("SELECT * FROM users WHERE email = ?").get(employerEmail);
     
     // Create employer user if it doesn't exist

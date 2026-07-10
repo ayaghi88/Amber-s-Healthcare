@@ -3,39 +3,46 @@
     {
       "id": "2503886d-8c33-46f4-bd59-e0a9989fee7b",
       "email": "amber@ambershealthcare.com",
-      "password": "$2b$10$xpnaJvoelp4Py7xZsDnufOHolHZzfMdvL5Cc8dJBWhHRiMQl7yNZ.",
+      "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
       "role": "admin",
       "created_at": "2026-07-09 18:53:48"
     },
     {
       "id": "91a33d22-51da-40c4-9245-9cf72894bf6e",
       "email": "ambersamanthayaghi@gmail.com",
-      "password": "$2b$10$GvUAEUpqSQyByODzakNhl.4H8SiSjeWt/F02aDw3Uysg47GNTcC8G",
+      "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
       "role": "candidate",
       "created_at": "2026-07-09 19:00:06"
     },
     {
       "id": "cc10050c-14e6-438b-8f0e-355e1b796932",
       "email": "employer@ambershealthcare.com",
-      "password": "$2b$10$d7fKjxdGraH.isUII4njO.9a9lMHqaPlYM0mXmDeWKGFBKU7L5O9O",
+      "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
       "role": "employer",
       "created_at": "2026-07-09 19:56:04"
+    },
+    {
+      "id": "0bbf795f-2698-4e02-a73c-964d0f3289f0",
+      "email": "contact@ambershealthcare.com",
+      "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
+      "role": "employer",
+      "created_at": "2026-07-10 03:45:10"
     }
   ],
   "candidates": [
     {
       "id": "4d0f761f-bb48-4896-abc5-d20779260d21",
       "user_id": "91a33d22-51da-40c4-9245-9cf72894bf6e",
-      "full_name": "Pending Setup",
-      "phone": "",
+      "full_name": "Baby Boy",
+      "phone": "2253333333",
       "parish": "East Baton Rouge",
-      "role_specialties": "[]",
-      "experience_summary": "",
+      "role_specialties": "[\"Front Desk (remote)\",\"Marketing Associate\"]",
+      "experience_summary": "I don’t have the exact experience for the roles selected. However, I have built a large social media following for a few people. ",
       "resume_url": null,
       "status": "active",
       "accepted_terms_at": "2026-07-09 19:07:49",
-      "contact_preference": null,
-      "interview_preference": null
+      "contact_preference": "Email",
+      "interview_preference": "Written Questionnaire / Email Interview"
     }
   ],
   "employers": [
@@ -49,6 +56,17 @@
       "website": "https://ambershealthcare.com",
       "stripe_customer_id": null,
       "accepted_agreement_at": "2026-07-09 19:56:04"
+    },
+    {
+      "id": "new-emp-id-1234",
+      "user_id": "0bbf795f-2698-4e02-a73c-964d0f3289f0",
+      "company_name": "Ambers Healthcare",
+      "contact_name": "Contact Team",
+      "phone": "555-0000",
+      "parish": "East Baton Rouge",
+      "website": "https://ambershealthcare.com",
+      "stripe_customer_id": null,
+      "accepted_agreement_at": "2026-07-10T03:54:34.589Z"
     }
   ],
   "job_postings": [
@@ -70,13 +88,90 @@
       "referrer_email": "contact@amberyaghi.org",
       "candidate_name": "Laura Yaghi",
       "candidate_email": "lyaghi@live.com",
-      "status": "pending",
+      "status": "rejected",
       "employer_notes": "",
       "created_at": "2026-07-09 18:59:38",
-      "updated_at": "2026-07-09 18:59:38"
+      "updated_at": "2026-07-10 03:49:45"
     }
   ],
-  "introductions": [],
+  "introductions": [
+    {
+      "id": "57608db6-7ca1-476f-b072-e0e4b4133c29",
+      "job_id": "d32416ab-6f40-4874-a2c1-6ded2425cd7c",
+      "candidate_id": "4d0f761f-bb48-4896-abc5-d20779260d21",
+      "introduced_at": "2026-07-10 03:42:50",
+      "note": "I think I would be great at marketing due to my experience with building social media followings in my personal life."
+    },
+    {
+      "id": "412883e2-60ae-4542-896c-d5ddcdee2bde",
+      "job_id": "d32416ab-6f40-4874-a2c1-6ded2425cd7c",
+      "candidate_id": "c38747bb-a10b-4810-aaf6-d0a8cd788220",
+      "introduced_at": "2026-07-10 03:46:49",
+      "note": "I have a decade of healthcare experience"
+    }
+  ],
   "hire_confirmations": [],
-  "placement_invoices": []
+  "placement_invoices": [],
+  "notifications": [
+    {
+      "id": "43cff63d-751b-438b-9ff4-fa466a8563fc",
+      "recipient_email": "employer@ambershealthcare.com",
+      "recipient_phone": "225-555-0199",
+      "type": "email",
+      "subject": "New Applicant for Marketing Associate: Baby Boy",
+      "message": "Hello Amber Samantha Yaghi,\n\nA local candidate, Baby Boy, has expressed direct interest in your job posting: **Marketing Associate**.\n\nCover Note: \"I think I would be great at marketing due to my experience with building social media followings in my personal life.\"\n\nPlease log in to Amber's Healthcare to review their complete candidate profile and schedule an interview!",
+      "status": "sent",
+      "created_at": "2026-07-10 03:42:50"
+    },
+    {
+      "id": "ebb1ca83-d648-453e-95f8-ffb37633cb33",
+      "recipient_email": "amber@ambershealthcare.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "Candidate Direct Application: Baby Boy applied to Marketing Associate",
+      "message": "Admin Alert:\nCandidate **Baby Boy** has applied directly to job posting **Marketing Associate** at **Amber's Healthcare Services**.\n\nCover Note: \"I think I would be great at marketing due to my experience with building social media followings in my personal life.\"",
+      "status": "sent",
+      "created_at": "2026-07-10 03:42:50"
+    },
+    {
+      "id": "123f4363-d227-40c6-b931-80cff44b886a",
+      "recipient_email": "ambersamanthayaghi@gmail.com",
+      "recipient_phone": "2253333333",
+      "type": "email",
+      "subject": "Application Submitted: Marketing Associate at Amber's Healthcare Services",
+      "message": "Hi Baby Boy,\n\nYou have successfully expressed interest in the position of **Marketing Associate** at **Amber's Healthcare Services**.\n\nYour profile has been shared with the employer. We will notify you when they review your application.",
+      "status": "sent",
+      "created_at": "2026-07-10 03:42:50"
+    },
+    {
+      "id": "fc204ab7-1c49-4395-8884-cb11d0552749",
+      "recipient_email": "employer@ambershealthcare.com",
+      "recipient_phone": "225-555-0199",
+      "type": "email",
+      "subject": "New Applicant for Marketing Associate: Baby Girl",
+      "message": "Hello Amber Samantha Yaghi,\n\nA local candidate, Baby Girl, has expressed direct interest in your job posting: **Marketing Associate**.\n\nCover Note: \"I have a decade of healthcare experience\"\n\nPlease log in to Amber's Healthcare to review their complete candidate profile and schedule an interview!",
+      "status": "sent",
+      "created_at": "2026-07-10 03:46:49"
+    },
+    {
+      "id": "c01f8ef5-d4bc-4b7b-909e-00e06be42335",
+      "recipient_email": "amber@ambershealthcare.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "Candidate Direct Application: Baby Girl applied to Marketing Associate",
+      "message": "Admin Alert:\nCandidate **Baby Girl** has applied directly to job posting **Marketing Associate** at **Amber's Healthcare Services**.\n\nCover Note: \"I have a decade of healthcare experience\"",
+      "status": "sent",
+      "created_at": "2026-07-10 03:46:49"
+    },
+    {
+      "id": "a97a25be-e942-4526-a66a-5964ea2450f2",
+      "recipient_email": "contact@ambershealthcare.com",
+      "recipient_phone": "2251111111",
+      "type": "email",
+      "subject": "Application Submitted: Marketing Associate at Amber's Healthcare Services",
+      "message": "Hi Baby Girl,\n\nYou have successfully expressed interest in the position of **Marketing Associate** at **Amber's Healthcare Services**.\n\nYour profile has been shared with the employer. We will notify you when they review your application.",
+      "status": "sent",
+      "created_at": "2026-07-10 03:46:49"
+    }
+  ]
 }
