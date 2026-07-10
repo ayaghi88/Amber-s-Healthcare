@@ -1613,12 +1613,23 @@ const CandidateDashboard = () => {
                     <p className="text-sm text-slate-500 font-medium">{m.company_name} • {m.job_parish} Parish</p>
                   </div>
                   <span className={cn(
-                    "px-3 py-1 rounded-full text-xs font-bold border self-start sm:self-center",
-                    m.match_status === 'confirmed_match' 
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                      : "bg-amber-50 text-amber-700 border-amber-200"
+                    "px-3 py-1 rounded-full text-[11px] font-bold border self-start sm:self-center uppercase tracking-wider",
+                    m.match_status === 'interview_accepted' || m.match_status === 'confirmed_match'
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : m.match_status === 'interview_declined'
+                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                      : m.match_status === 'interview_pending'
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : m.match_status === 'potential_match'
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : "bg-slate-50 text-slate-700 border-slate-200"
                   )}>
-                    {m.match_status === 'confirmed_match' ? '✓ Confirmed Match' : '⏳ Potential Match (Under Review)'}
+                    {m.match_status === 'interview_accepted' ? '✓ Interview Accepted' :
+                     m.match_status === 'interview_pending' ? '⏳ Interview Pending' :
+                     m.match_status === 'interview_declined' ? '✕ Decided Not to Move Forward' :
+                     m.match_status === 'potential_match' ? '⏳ Application Under Review' :
+                     m.match_status === 'introduced' ? '✨ Potential Match Identified' :
+                     m.match_status === 'confirmed_match' ? '✓ Introduced' : m.match_status}
                   </span>
                 </div>
                 
@@ -1776,6 +1787,24 @@ const EmployerDashboard = () => {
       }
     } catch (err) {
       console.error("Failed to fetch matches", err);
+    }
+  };
+
+  const handleUpdateIntroStatus = async (introId: string, status: string) => {
+    try {
+      const res = await fetch(`/api/introductions/${introId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to update interview status");
+      }
+    } catch (e) {
+      console.error("Failed to update status", e);
     }
   };
 
@@ -2212,7 +2241,18 @@ const EmployerDashboard = () => {
                   <div className="flex-grow">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-bold text-lg text-slate-900">{i.candidate_name}</h3>
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-bold">INTRODUCED</span>
+                      <span className={cn(
+                        "px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase tracking-wider",
+                        i.status === 'interview_accepted' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                        i.status === 'interview_pending' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                        i.status === 'interview_declined' ? "bg-rose-50 text-rose-700 border-rose-200" :
+                        "bg-blue-50 text-blue-700 border-blue-200"
+                      )}>
+                        {i.status === 'interview_accepted' ? '✓ Interview Accepted' :
+                         i.status === 'interview_pending' ? '⏳ Interview Pending' :
+                         i.status === 'interview_declined' ? '✕ Interview Declined' :
+                         '✨ New Introduction'}
+                      </span>
                     </div>
                     <p className="text-sm text-slate-600 mb-2 font-medium">For: {i.job_title}</p>
                     <p className="text-sm text-slate-500 mb-4">{i.experience_summary}</p>
@@ -2234,6 +2274,43 @@ const EmployerDashboard = () => {
                         <p className="italic">"{i.note}"</p>
                       </div>
                     )}
+
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2 items-center">
+                      <span className="text-xs text-slate-500 font-bold mr-1">Interview Decision:</span>
+                      <button
+                        onClick={() => handleUpdateIntroStatus(i.id, 'interview_accepted')}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          i.status === 'interview_accepted'
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        )}
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleUpdateIntroStatus(i.id, 'interview_pending')}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          i.status === 'interview_pending'
+                            ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        )}
+                      >
+                        Pend Review
+                      </button>
+                      <button
+                        onClick={() => handleUpdateIntroStatus(i.id, 'interview_declined')}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          i.status === 'interview_declined'
+                            ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        )}
+                      >
+                        Deny
+                      </button>
+                    </div>
                   </div>
                   <div className="flex-shrink-0 flex items-center">
                     {i.hire_id ? (

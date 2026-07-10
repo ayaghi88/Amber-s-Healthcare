@@ -20,6 +20,13 @@
       "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
       "role": "employer",
       "created_at": "2026-07-09 19:56:04"
+    },
+    {
+      "id": "u-babygirl-id-1234567890",
+      "email": "babygirl@gmail.com",
+      "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
+      "role": "candidate",
+      "created_at": "2026-07-09 19:15:00"
     }
   ],
   "candidates": [
@@ -36,6 +43,20 @@
       "accepted_terms_at": "2026-07-09 19:07:49",
       "contact_preference": "Email",
       "interview_preference": "Written Questionnaire / Email Interview"
+    },
+    {
+      "id": "c38747bb-a10b-4810-aaf6-d0a8cd788220",
+      "user_id": "u-babygirl-id-1234567890",
+      "full_name": "Baby Girl",
+      "phone": "2251111111",
+      "parish": "East Baton Rouge",
+      "role_specialties": "[\"Marketing Associate\"]",
+      "experience_summary": "I have a decade of healthcare experience",
+      "resume_url": null,
+      "status": "active",
+      "accepted_terms_at": "2026-07-09 19:15:30",
+      "contact_preference": "Email",
+      "interview_preference": "Virtual Video Call"
     }
   ],
   "employers": [
@@ -97,7 +118,7 @@
   "notifications": [
     {
       "id": "43cff63d-751b-438b-9ff4-fa466a8563fc",
-      "recipient_email": "employer@ambershealthcare.com",
+      "recipient_email": "contact@ambershealthcare.com",
       "recipient_phone": "225-555-0199",
       "type": "email",
       "subject": "New Applicant for Marketing Associate: Baby Boy",
@@ -127,7 +148,7 @@
     },
     {
       "id": "fc204ab7-1c49-4395-8884-cb11d0552749",
-      "recipient_email": "employer@ambershealthcare.com",
+      "recipient_email": "contact@ambershealthcare.com",
       "recipient_phone": "225-555-0199",
       "type": "email",
       "subject": "New Applicant for Marketing Associate: Baby Girl",

@@ -504,7 +504,7 @@ async function startServer() {
     try {
       db.prepare(`
         UPDATE introductions
-        SET status = 'confirmed_match'
+        SET status = 'introduced'
         WHERE id = ?
       `).run(introId);
 
@@ -522,14 +522,14 @@ async function startServer() {
       if (intro) {
         const formattedNote = intro.note && intro.note.trim() ? intro.note.trim() : 'Our placement team reviewed and confirmed you are a perfect fit!';
 
-        // 1. Alert Candidate: "confirmed match"
-        const candEmailSubject = `Confirmed Match! You've been introduced to ${intro.company_name} - ${intro.job_title}`;
-        const candEmailMsg = `Hi ${intro.candidate_name},\n\nWe have exciting news! Your application match has been reviewed and officially **CONFIRMED** for the position of **${intro.job_title}** with **${intro.company_name}**!\n\nDetails:\n- Interview Preference: ${intro.interview_preference || 'Standard Formats'}\n- Matching Note: "${formattedNote}"\n\nPlease log into your Candidate Dashboard to review details and prepare for employer outreach.\n\nCongratulations on this confirmed match!\nAmber's Healthcare Team`;
+        // 1. Notify Candidate via Email and SMS
+        const candEmailSubject = `Potential Match Found! We've introduced you for ${intro.job_title}`;
+        const candEmailMsg = `Hi ${intro.candidate_name},\n\nWe have exciting news! A potential match has been identified and you have been introduced to the position of **${intro.job_title}** with **${intro.company_name}** in **${intro.job_parish} Parish**!\n\nDetails:\n- Interview Preference: ${intro.interview_preference || 'Standard Formats'}\n- Matching Note: "${formattedNote}"\n\nPlease log in to your Candidate Dashboard to review details. The employer will review your profile to schedule an interview!\n\nBest regards,\nAmber's Healthcare Team`;
         dispatchNotification(intro.candidate_email, intro.candidate_phone, 'both', candEmailSubject, candEmailMsg);
 
-        // 2. Alert Employer: "confirmed match"
-        const empEmailSubject = `Confirmed Match: ${intro.candidate_name} introduced for ${intro.job_title}`;
-        const empEmailMsg = `Hello ${intro.contact_name},\n\nOur placement team has successfully reviewed and **CONFIRMED** a high-quality match for your job opening: **${intro.job_title}**!\n\nCandidate details:\n- Name: ${intro.candidate_name}\n- Parish: ${intro.candidate_parish || intro.job_parish}\n- Contact Preference: ${intro.contact_preference || 'Email'}\n- Pre-selected Interview format preference: ${intro.interview_preference || 'Standard Formats'}\n- Cover Note: "${formattedNote}"\n\nPlease log in to your Employer Dashboard under 'Matched Candidates' to coordinate scheduling and contact them directly!\n\nThank you,\nAmber's Healthcare Team`;
+        // 2. Notify Employer via Email
+        const empEmailSubject = `Potential Match Found: ${intro.candidate_name} introduced for ${intro.job_title}`;
+        const empEmailMsg = `Hello ${intro.contact_name},\n\nOur placement team has identified a potential match for your job opening: **${intro.job_title}**!\n\nCandidate details:\n- Name: ${intro.candidate_name}\n- Parish: ${intro.candidate_parish || intro.job_parish}\n- Contact Preference: ${intro.contact_preference || 'Email'}\n- Pre-selected Interview format preference: ${intro.interview_preference || 'Standard Formats'}\n- Cover Note: "${formattedNote}"\n\nPlease log in to your Employer Dashboard under 'Candidate Introductions' to review their profile and either Accept, Pend, or Deny an interview!\n\nThank you,\nAmber's Healthcare Team`;
         dispatchNotification(intro.employer_email, intro.employer_phone, 'email', empEmailSubject, empEmailMsg);
       }
 
@@ -557,6 +557,95 @@ async function startServer() {
       backupDatabase();
 
       res.json({ success: true, message: "Match declined successfully." });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  // Employer/Admin endpoint to update introduction / interview status and trigger notifications
+  app.post("/api/introductions/:id/status", authenticate, (req: any, res) => {
+    const introId = req.params.id;
+    const { status } = req.body;
+    const allowedStatuses = ['introduced', 'interview_accepted', 'interview_pending', 'interview_declined', 'confirmed_match', 'declined'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid introduction status." });
+    }
+
+    try {
+      // If user is employer, verify they own the job posting for this introduction
+      if (req.user.role === 'employer') {
+        const employer = db.prepare("SELECT id FROM employers WHERE user_id = ?").get(req.user.id) as any;
+        if (!employer) return res.status(403).json({ error: "Employer profile not found" });
+        
+        const intro = db.prepare(`
+          SELECT i.id 
+          FROM introductions i
+          JOIN job_postings j ON i.job_id = j.id
+          WHERE i.id = ? AND j.employer_id = ?
+        `).get(introId, employer.id);
+        
+        if (!intro) return res.status(403).json({ error: "You do not have permission to manage this introduction." });
+      }
+
+      db.prepare("UPDATE introductions SET status = ? WHERE id = ?").run(status, introId);
+
+      // Back up database immediately to persist status change
+      backupDatabase();
+
+      // Send notifications upon status changes
+      try {
+        const intro = db.prepare(`
+          SELECT i.*, j.title as job_title, j.parish as job_parish, e.company_name, e.contact_name, eu.email as employer_email, e.phone as employer_phone, c.full_name as candidate_name, cu.email as candidate_email, c.phone as candidate_phone, c.contact_preference, c.interview_preference
+          FROM introductions i
+          JOIN job_postings j ON i.job_id = j.id
+          JOIN employers e ON j.employer_id = e.id
+          JOIN users eu ON e.user_id = eu.id
+          JOIN candidates c ON i.candidate_id = c.id
+          JOIN users cu ON c.user_id = cu.id
+          WHERE i.id = ?
+        `).get(introId) as any;
+
+        if (intro) {
+          let candMsg = "";
+          let candSubject = "";
+          let adminMsg = "";
+          let adminSubject = "";
+
+          if (status === 'interview_accepted') {
+            candSubject = `Interview Accepted: ${intro.job_title} at ${intro.company_name}`;
+            candMsg = `Hi ${intro.candidate_name},\n\nWe have great news! **${intro.company_name}** has accepted your introduction and would like to proceed with an interview for the position of **${intro.job_title}**!\n\nYour selected interview preference: ${intro.interview_preference || 'Virtual Video Call'}.\n\nAn employer representative will reach out to you directly via your preferred contact method: ${intro.contact_preference || 'Email'}.\n\nGood luck with your interview!\nAmber's Healthcare Team`;
+            
+            adminSubject = `Interview Accepted: ${intro.company_name} & ${intro.candidate_name}`;
+            adminMsg = `Admin Notice:\n\nEmployer **${intro.company_name}** has accepted to interview candidate **${intro.candidate_name}** for **${intro.job_title}**.\n\nPlease monitor progress and coordinate if necessary.`;
+          } else if (status === 'interview_pending') {
+            candSubject = `Application Status Update: ${intro.job_title} at ${intro.company_name}`;
+            candMsg = `Hi ${intro.candidate_name},\n\nYour introduction for **${intro.job_title}** at **${intro.company_name}** has been marked as **Pending Review**.\n\nThe employer is currently reviewing candidate profiles and will update your status soon.\n\nBest regards,\nAmber's Healthcare Team`;
+            
+            adminSubject = `Interview Pending: ${intro.company_name} & ${intro.candidate_name}`;
+            adminMsg = `Admin Notice:\n\nEmployer **${intro.company_name}** has set candidate **${intro.candidate_name}**'s introduction to **Pending Review** for **${intro.job_title}**.`;
+          } else if (status === 'interview_declined') {
+            candSubject = `Application Update: ${intro.job_title} at ${intro.company_name}`;
+            candMsg = `Hi ${intro.candidate_name},\n\nThank you for your interest in the **${intro.job_title}** position at **${intro.company_name}**.\n\nAfter reviewing your candidate profile, the employer has decided not to move forward with an interview for this role at this time.\n\nWe will keep actively matching you with other outstanding Baton Rouge healthcare practices!\n\nWarm regards,\nAmber's Healthcare Team`;
+            
+            adminSubject = `Interview Declined: ${intro.company_name} & ${intro.candidate_name}`;
+            adminMsg = `Admin Notice:\n\nEmployer **${intro.company_name}** has declined to interview candidate **${intro.candidate_name}** for **${intro.job_title}**.`;
+          }
+
+          if (candSubject && candMsg) {
+            dispatchNotification(intro.candidate_email, intro.candidate_phone, 'email', candSubject, candMsg);
+          }
+          if (adminSubject && adminMsg) {
+            const adminUsers = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
+            for (const admin of adminUsers) {
+              dispatchNotification(admin.email, null, 'email', adminSubject, adminMsg);
+            }
+          }
+        }
+      } catch (notifyErr: any) {
+        logDebug(`Issue sending status change notifications: ${notifyErr.message}`);
+      }
+
+      res.json({ success: true, message: `Introduction status successfully updated to ${status}` });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
@@ -792,7 +881,7 @@ async function startServer() {
   // --- Job Routes ---
   app.post("/api/jobs", authenticate, (req: any, res) => {
     if (req.user.role !== 'employer') return res.status(403).json({ error: "Forbidden" });
-    const employer: any = db.prepare("SELECT id, contact_name, phone, accepted_agreement_at FROM employers WHERE user_id = ?").get(req.user.id);
+    const employer: any = db.prepare("SELECT id, company_name, contact_name, phone, accepted_agreement_at FROM employers WHERE user_id = ?").get(req.user.id);
     if (!employer || !employer.accepted_agreement_at) return res.status(403).json({ error: "Agreement not accepted" });
 
     const { title, description, parish, role_category, interview_formats } = req.body;
@@ -805,13 +894,24 @@ async function startServer() {
       id, employer.id, title, description, parish, role_category, formatsStr
     );
 
-    // Send confirmation email to employer who posted the job
+    // Back up database immediately to persist new job
+    backupDatabase();
+
+    // Send confirmation email to employer who posted the job and alerts to admins
     try {
       const empUser = db.prepare("SELECT email FROM users WHERE id = ?").get(req.user.id) as any;
       if (empUser) {
         const subject = `Job Posting Published: ${title}`;
         const message = `Hello ${employer.contact_name || 'Employer'},\n\nYour new remote job opening for **${title}** has been successfully published!\n\nDetails:\n- Category: ${role_category}\n- Parish: ${parish}\n- Interview formats configured: ${JSON.parse(formatsStr).join(', ')}\n\nWe will notify you immediately once candidate matches are identified or when applications are submitted.\n\nThank you for choosing Amber's Healthcare!`;
         dispatchNotification(empUser.email, employer.phone, 'email', subject, message);
+      }
+
+      // Alert Admins that a new job was listed
+      const admins = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
+      for (const admin of admins) {
+        const adminSubject = `New Job Posting Alert: ${title} at ${employer.company_name || "Amber's Healthcare Services"}`;
+        const adminMessage = `Admin Alert:\n\nA new job posting has been published on Amber's Healthcare.\n\nJob Title: **${title}**\nEmployer: **${employer.company_name || "Amber's Healthcare Services"}**\nCategory: **${role_category}**\nParish: **${parish}**\n\nPlease log in to the admin dashboard to review this job posting and make candidate matches!`;
+        dispatchNotification(admin.email, null, 'email', adminSubject, adminMessage);
       }
     } catch (notifyErr: any) {
       logDebug(`Issue sending job post notifications: ${notifyErr.message}`);
@@ -1013,9 +1113,19 @@ async function startServer() {
     }
     const id = uuidv4();
     try {
-      db.prepare("INSERT INTO introductions (id, job_id, candidate_id, note, status) VALUES (?, ?, ?, ?, 'confirmed_match')").run(id, job_id, candidate_id, note);
+      // Check if introduction already exists to avoid UNIQUE constraint failed errors
+      const existing = db.prepare("SELECT id, status, note FROM introductions WHERE job_id = ? AND candidate_id = ?").get(job_id, candidate_id) as any;
       
-      // Send match notifications to both candidate and employer
+      if (existing) {
+        db.prepare("UPDATE introductions SET status = 'introduced', note = ?, introduced_at = CURRENT_TIMESTAMP WHERE id = ?").run(note || existing.note, existing.id);
+      } else {
+        db.prepare("INSERT INTO introductions (id, job_id, candidate_id, note, status) VALUES (?, ?, ?, ?, 'introduced')").run(id, job_id, candidate_id, note);
+      }
+      
+      // Save database backup immediately
+      backupDatabase();
+
+      // Send match notifications to both candidate and employer stating potential match was found
       try {
         const candidate = db.prepare(`
           SELECT c.*, u.email as candidate_email 
@@ -1036,24 +1146,21 @@ async function startServer() {
           const formattedNote = note && note.trim() ? note.trim() : 'Our placement team identified you as a great fit!';
           
           // 1. Notify Candidate via Email and SMS
-          const candEmailSubject = `Matched! You've been introduced to ${job.company_name} - ${job.title}`;
-          const candEmailMsg = `Hi ${candidate.full_name},\n\nWe have exciting news! You have been matched and introduced to the position of ${job.title} at ${job.company_name} in ${job.parish} Parish.\n\nMatching Note: "${formattedNote}"\n\nPlease log in to your dashboard to confirm your interest and schedule next steps!`;
+          const candEmailSubject = `Potential Match Found! We've introduced you for ${job.title}`;
+          const candEmailMsg = `Hi ${candidate.full_name},\n\nWe have exciting news! A potential match has been identified and you have been introduced to the position of **${job.title}** with **${job.company_name}** in **${job.parish} Parish**!\n\nDetails:\n- Interview Preference: ${candidate.interview_preference || 'Standard Formats'}\n- Matching Note: "${formattedNote}"\n\nPlease log in to your Candidate Dashboard to review details. The employer will review your profile to schedule an interview!\n\nBest regards,\nAmber's Healthcare Team`;
           dispatchNotification(candidate.candidate_email, candidate.phone, 'both', candEmailSubject, candEmailMsg);
 
           // 2. Notify Employer via Email
-          const empEmailSubject = `Qualified Match: ${candidate.full_name} introduced for ${job.title}`;
-          const empEmailMsg = `Hello ${job.contact_name},\n\nWe have found a qualified local match for your position of ${job.title}!\n\nCandidate Name: ${candidate.full_name}\nParish: ${candidate.parish}\nPreferred Contact: ${candidate.contact_preference || 'Email'}\n\nMatching Note: "${formattedNote}"\n\nPlease log in to your employer dashboard to review their specialties and coordinate an interview!`;
+          const empEmailSubject = `Potential Match Found: ${candidate.full_name} introduced for ${job.title}`;
+          const empEmailMsg = `Hello ${job.contact_name},\n\nOur placement team has identified a potential match for your job opening: **${job.title}**!\n\nCandidate details:\n- Name: ${candidate.full_name}\n- Parish: ${candidate.parish}\n- Contact Preference: ${candidate.contact_preference || 'Email'}\n- Pre-selected Interview format preference: ${candidate.interview_preference || 'Standard Formats'}\n- Cover Note: "${formattedNote}"\n\nPlease log in to your Employer Dashboard under 'Candidate Introductions' to review their profile and either Accept, Pend, or Deny an interview!\n\nThank you,\nAmber's Healthcare Team`;
           dispatchNotification(job.employer_email, job.employer_phone, 'email', empEmailSubject, empEmailMsg);
         }
       } catch (notifyErr: any) {
         logDebug(`Issue sending match notifications: ${notifyErr.message}`);
       }
 
-      res.json({ id });
+      res.json({ id: existing ? existing.id : id });
     } catch (err: any) {
-      if (err.message.includes("UNIQUE constraint failed")) {
-        return res.status(400).json({ error: "This candidate has already been matched/introduced to this job posting." });
-      }
       res.status(400).json({ error: err.message });
     }
   });
