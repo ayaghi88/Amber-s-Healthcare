@@ -95,6 +95,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Support verified sender email over Brevo/SMTP via FROM_EMAIL environment variable
+const FROM_EMAIL = process.env.FROM_EMAIL || 'contact@ambershealthcare.com';
+
 // Helper to dispatch email/SMS notifications and save them to SQLite table
 function dispatchNotification(recipientEmail: string | null, recipientPhone: string | null, type: 'email' | 'sms' | 'both', subject: string | null, message: string) {
   const id = uuidv4();
@@ -110,7 +113,7 @@ function dispatchNotification(recipientEmail: string | null, recipientPhone: str
     if ((type === 'email' || type === 'both') && recipientEmail) {
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
         transporter.sendMail({
-          from: '"Ambers Healthcare" <contact@ambershealthcare.com>',
+          from: `"Amber's Healthcare" <${FROM_EMAIL}>`,
           to: recipientEmail,
           subject: subject || "Notification from Amber's Healthcare",
           text: message
