@@ -1717,6 +1717,7 @@ const EmployerDashboard = () => {
   const [startDate, setStartDate] = useState("");
   const [selectedJobMatches, setSelectedJobMatches] = useState<any>(null);
   const [matches, setMatches] = useState<any[]>([]);
+  const [selectedJobDetails, setSelectedJobDetails] = useState<any>(null);
   
   // Profile save feedback states
   const [profileSuccess, setProfileSuccess] = useState(false);
@@ -2140,19 +2141,31 @@ const EmployerDashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {jobs.map(j => (
-                <div key={j.id} className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-slate-900">{j.title}</h3>
-                    <span className={cn("px-2 py-1 rounded text-xs font-bold uppercase", j.status === 'open' ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")}>
-                      {j.status}
-                    </span>
+                <div key={j.id} className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 
+                        onClick={() => setSelectedJobDetails(j)}
+                        className="font-bold text-slate-900 cursor-pointer hover:text-emerald-600 hover:underline transition-colors"
+                      >
+                        {j.title}
+                      </h3>
+                      <span className={cn("px-2 py-1 rounded text-xs font-bold uppercase", j.status === 'open' ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")}>
+                        {j.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-4">{j.role_category}</p>
                   </div>
-                  <p className="text-sm text-slate-500 mb-4">{j.role_category}</p>
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs text-slate-400">Posted on {new Date(j.created_at).toLocaleDateString()}</div>
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                    <button 
+                      onClick={() => setSelectedJobDetails(j)}
+                      className="text-xs font-bold text-slate-500 hover:text-emerald-600 hover:underline cursor-pointer"
+                    >
+                      View Details
+                    </button>
                     <button 
                       onClick={() => fetchMatches(j.id)}
-                      className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:underline"
+                      className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:underline cursor-pointer"
                     >
                       <Sparkles className="w-3 h-3" />
                       View Matched Candidates
@@ -2625,6 +2638,77 @@ const EmployerDashboard = () => {
               fetchData();
             }}
           />
+        )}
+
+        {selectedJobDetails && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setSelectedJobDetails(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl p-8 overflow-y-auto max-h-[90vh] z-10"
+            >
+              <button 
+                onClick={() => setSelectedJobDetails(null)}
+                className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+
+              <div className="mb-6 border-b border-slate-100 pb-6">
+                <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 uppercase tracking-wider">
+                  {selectedJobDetails.role_category}
+                </span>
+                <h2 className="text-3xl font-extrabold text-slate-900 mt-1 mb-2">{selectedJobDetails.title}</h2>
+                <div className="flex flex-wrap items-center gap-4 text-slate-500 font-medium text-sm">
+                  <span>{selectedJobDetails.company_name || employer?.company_name || "Amber's Healthcare Services"}</span>
+                  <span>•</span>
+                  <span>{selectedJobDetails.parish} Parish</span>
+                  <span>•</span>
+                  <span className="text-emerald-600 font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-4 h-4" /> Remote
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Job Description</h3>
+                  <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    {selectedJobDetails.description}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Configured Interview Formats</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getJobFormats(selectedJobDetails).map(format => (
+                      <span key={format} className="inline-block px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
+                        • {format}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedJobDetails(null)}
+                    className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all text-sm cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
@@ -3122,6 +3206,7 @@ const AdminDashboard = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [selectedEmployer, setSelectedEmployer] = useState<any>(null);
   const [selectedReferral, setSelectedReferral] = useState<any>(null);
+  const [selectedJobDetails, setSelectedJobDetails] = useState<any>(null);
   const [showIntroForm, setShowIntroForm] = useState(false);
   const [introData, setIntroData] = useState({ job_id: "", candidate_id: "", note: "" });
   
@@ -3651,9 +3736,13 @@ const AdminDashboard = () => {
           {selectedTab === 'jobs' && (
             <div className="divide-y divide-slate-100">
               {filteredItems.map(j => (
-                <div key={j.id} className="p-6 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
+                <div 
+                  key={j.id} 
+                  onClick={() => setSelectedJobDetails(j)}
+                  className="p-6 flex justify-between items-center hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                >
                   <div>
-                    <p className="font-extrabold text-slate-900 text-lg">{j.title}</p>
+                    <p className="font-extrabold text-slate-900 text-lg group-hover:text-emerald-600 group-hover:underline transition-colors">{j.title}</p>
                     <p className="text-sm font-semibold text-emerald-600">{j.company_name}</p>
                     <div className="flex flex-wrap items-center gap-x-4 mt-1 text-xs text-slate-500">
                       <span>Category: <strong className="text-slate-700">{j.role_category}</strong></span>
@@ -3661,6 +3750,9 @@ const AdminDashboard = () => {
                       <span>Status: <strong className={cn("uppercase", j.status === 'open' ? 'text-emerald-600' : 'text-slate-400')}>{j.status}</strong></span>
                     </div>
                   </div>
+                  <button className="text-xs font-bold text-slate-400 group-hover:text-emerald-600 transition-colors border border-slate-200 group-hover:border-emerald-200 px-3.5 py-2 rounded-xl bg-white shadow-sm cursor-pointer">
+                    View Details
+                  </button>
                 </div>
               ))}
               {filteredItems.length === 0 && (
@@ -4108,6 +4200,77 @@ const AdminDashboard = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {selectedJobDetails && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setSelectedJobDetails(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl p-8 overflow-y-auto max-h-[90vh] z-10"
+            >
+              <button 
+                onClick={() => setSelectedJobDetails(null)}
+                className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+
+              <div className="mb-6 border-b border-slate-100 pb-6">
+                <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 uppercase tracking-wider">
+                  {selectedJobDetails.role_category}
+                </span>
+                <h2 className="text-3xl font-extrabold text-slate-900 mt-1 mb-2">{selectedJobDetails.title}</h2>
+                <div className="flex flex-wrap items-center gap-4 text-slate-500 font-medium text-sm">
+                  <span>{selectedJobDetails.company_name || "Amber's Healthcare Services"}</span>
+                  <span>•</span>
+                  <span>{selectedJobDetails.parish} Parish</span>
+                  <span>•</span>
+                  <span className="text-emerald-600 font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-4 h-4" /> Remote
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Job Description</h3>
+                  <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    {selectedJobDetails.description}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Configured Interview Formats</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getJobFormats(selectedJobDetails).map(format => (
+                      <span key={format} className="inline-block px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
+                        • {format}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedJobDetails(null)}
+                    className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all text-sm cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
