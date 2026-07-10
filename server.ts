@@ -243,7 +243,11 @@ async function startServer() {
       db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, normalizedEmail, hashedPassword, role);
       
       const token = jwt.sign({ id: userId, email: normalizedEmail, role }, JWT_SECRET, { expiresIn: "7d" });
-      res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
+      res.cookie("token", token, { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === "production", 
+        sameSite: 'lax' 
+      });
       logDebug(`Register success: ${normalizedEmail}`);
       res.json({ token, user: { id: userId, email: normalizedEmail, role } });
     } catch (err: any) {
@@ -269,7 +273,11 @@ async function startServer() {
       }
 
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
-      res.cookie("token", token, { httpOnly: true, secure: true, sameSite: 'none' });
+      res.cookie("token", token, { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === "production", 
+        sameSite: 'lax' 
+      });
       logDebug(`Login success: ${email} (resolved to: ${user.email}, role: ${user.role})`);
       res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (err: any) {

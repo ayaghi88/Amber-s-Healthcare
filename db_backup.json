@@ -10,7 +10,7 @@
     {
       "id": "91a33d22-51da-40c4-9245-9cf72894bf6e",
       "email": "ambersamanthayaghi@gmail.com",
-      "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
+      "password": "$2b$10$vHd1Gg3rAbM4ZLljoQJYXeRAPj4bjE0OQ5PlyWYGwOnDVjNydD3Gy",
       "role": "candidate",
       "created_at": "2026-07-09 19:00:06"
     },
@@ -27,6 +27,20 @@
       "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
       "role": "candidate",
       "created_at": "2026-07-09 19:15:00"
+    },
+    {
+      "id": "79518039-477c-4256-a0e9-d123d45d56f0",
+      "email": "test_debug@example.com",
+      "password": "$2b$10$PWbzlLz5jfD2TL78HdHKoejdje7sGlgcYDdNYSIhEWjIm2O7AnxGa",
+      "role": "candidate",
+      "created_at": "2026-07-10 09:01:41"
+    },
+    {
+      "id": "b3edc2bc-eabc-422c-bdc3-ba3afad7d110",
+      "email": "test_final_health@example.com",
+      "password": "$2b$10$oGCkeSgyFkTgmqXosd/PlOOdSeI2LA8qPCYnDTN1d0F44J8VrOMRy",
+      "role": "candidate",
+      "created_at": "2026-07-10 09:04:51"
     }
   ],
   "candidates": [
@@ -81,6 +95,7 @@
       "parish": "East Baton Rouge",
       "role_category": "Marketing Associate",
       "status": "open",
+      "interview_formats": "[\"Virtual Video Call\", \"Phone-Only Interview\", \"Written Questionnaire / Email Interview\", \"Virtual Video Call (Questions provided 48h in advance)\"]",
       "created_at": "2026-07-09 19:56:04"
     }
   ],
@@ -103,14 +118,16 @@
       "job_id": "d32416ab-6f40-4874-a2c1-6ded2425cd7c",
       "candidate_id": "4d0f761f-bb48-4896-abc5-d20779260d21",
       "introduced_at": "2026-07-10 03:42:50",
-      "note": "I think I would be great at marketing due to my experience with building social media followings in my personal life."
+      "note": "I think I would be great at marketing due to my experience with building social media followings in my personal life.",
+      "status": "confirmed_match"
     },
     {
       "id": "412883e2-60ae-4542-896c-d5ddcdee2bde",
       "job_id": "d32416ab-6f40-4874-a2c1-6ded2425cd7c",
       "candidate_id": "c38747bb-a10b-4810-aaf6-d0a8cd788220",
       "introduced_at": "2026-07-10 03:46:49",
-      "note": "I have a decade of healthcare experience"
+      "note": "I have a decade of healthcare experience",
+      "status": "confirmed_match"
     }
   ],
   "hire_confirmations": [],

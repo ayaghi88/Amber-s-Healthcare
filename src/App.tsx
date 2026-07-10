@@ -45,9 +45,35 @@ export const INTERVIEW_FORMATS_LIST = [
   "Virtual Video Call (Questions provided 48h in advance)"
 ];
 
+// Safely access localStorage to prevent SecurityError in sandbox/iframe environments
+const safeStorage = {
+  _memoryStore: {} as Record<string, string>,
+  getItem(key: string): string | null {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (e) {
+      return this._memoryStore[key] || null;
+    }
+  },
+  setItem(key: string, value: string): void {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (e) {
+      this._memoryStore[key] = value;
+    }
+  },
+  removeItem(key: string): void {
+    try {
+      window.localStorage.removeItem(key);
+    } catch (e) {
+      delete this._memoryStore[key];
+    }
+  }
+};
+
 // Custom fetch helper to support Bearer token authentication in iframe environments without modifying read-only window.fetch
 const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const token = localStorage.getItem("token");
+  const token = safeStorage.getItem("token");
   let newInit = init ? { ...init } : {};
   if (token) {
     const headers = new Headers(newInit.headers);
@@ -710,12 +736,12 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = (user: User, token?: string) => {
     if (token) {
-      localStorage.setItem("token", token);
+      safeStorage.setItem("token", token);
     }
     setUser(user);
   };
   const logout = () => {
-    localStorage.removeItem("token");
+    safeStorage.removeItem("token");
     setUser(null);
   };
 
