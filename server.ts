@@ -110,7 +110,7 @@ function dispatchNotification(recipientEmail: string | null, recipientPhone: str
     if ((type === 'email' || type === 'both') && recipientEmail) {
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
         transporter.sendMail({
-          from: '"Ambers Healthcare" <noreply@ambershealthcare.com>',
+          from: '"Ambers Healthcare" <contact@ambershealthcare.com>',
           to: recipientEmail,
           subject: subject || "Notification from Amber's Healthcare",
           text: message

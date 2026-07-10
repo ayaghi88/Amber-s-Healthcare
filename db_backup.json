@@ -16,17 +16,10 @@
     },
     {
       "id": "cc10050c-14e6-438b-8f0e-355e1b796932",
-      "email": "employer@ambershealthcare.com",
-      "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
-      "role": "employer",
-      "created_at": "2026-07-09 19:56:04"
-    },
-    {
-      "id": "0bbf795f-2698-4e02-a73c-964d0f3289f0",
       "email": "contact@ambershealthcare.com",
       "password": "$2b$10$m33fkz0ryHUEpfdzQEU5deKLI5hHOATwcJ5LwzmPjOM9ag5hZAR9u",
       "role": "employer",
-      "created_at": "2026-07-10 03:45:10"
+      "created_at": "2026-07-09 19:56:04"
     }
   ],
   "candidates": [
@@ -56,17 +49,6 @@
       "website": "https://ambershealthcare.com",
       "stripe_customer_id": null,
       "accepted_agreement_at": "2026-07-09 19:56:04"
-    },
-    {
-      "id": "new-emp-id-1234",
-      "user_id": "0bbf795f-2698-4e02-a73c-964d0f3289f0",
-      "company_name": "Ambers Healthcare",
-      "contact_name": "Contact Team",
-      "phone": "555-0000",
-      "parish": "East Baton Rouge",
-      "website": "https://ambershealthcare.com",
-      "stripe_customer_id": null,
-      "accepted_agreement_at": "2026-07-10T03:54:34.589Z"
     }
   ],
   "job_postings": [

@@ -2582,6 +2582,7 @@ const JobBoard = () => {
   // Profile data & Modal states
   const [candidateProfile, setCandidateProfile] = useState<any>(null);
   const [applyingJob, setApplyingJob] = useState<any>(null);
+  const [selectedJobDetails, setSelectedJobDetails] = useState<any>(null);
   const [appForm, setAppForm] = useState({
     note: "",
     phone: "",
@@ -2695,7 +2696,12 @@ const JobBoard = () => {
                   <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 uppercase tracking-wider">
                     {job.role_category}
                   </span>
-                  <h2 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{job.title}</h2>
+                  <h2 
+                    onClick={() => setSelectedJobDetails(job)}
+                    className="text-2xl font-bold text-slate-900 hover:text-emerald-600 hover:underline transition-colors cursor-pointer"
+                  >
+                    {job.title}
+                  </h2>
                   <p className="text-slate-500 font-medium">{job.company_name} • {job.parish} Parish</p>
                 </div>
                 <div className="flex items-center gap-2 text-emerald-600 font-bold">
@@ -2703,11 +2709,25 @@ const JobBoard = () => {
                   <span>Remote</span>
                 </div>
               </div>
-              <p className="text-slate-600 mb-6 line-clamp-2">{job.description}</p>
+              <p 
+                onClick={() => setSelectedJobDetails(job)}
+                className="text-slate-600 mb-6 line-clamp-2 cursor-pointer hover:text-slate-800 transition-colors"
+                title="Click to view entire job description"
+              >
+                {job.description} <span className="text-emerald-600 font-bold hover:underline inline-block text-sm ml-1">Read more &rarr;</span>
+              </p>
               <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                  <MapPin className="w-4 h-4" />
-                  <span>Baton Rouge Region</span>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <MapPin className="w-4 h-4" />
+                    <span>Baton Rouge Region</span>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedJobDetails(job)}
+                    className="text-emerald-600 font-bold hover:text-emerald-700 transition-colors cursor-pointer text-sm flex items-center gap-1"
+                  >
+                    View Details &rarr;
+                  </button>
                 </div>
 
                 {interestSuccess === job.id ? (
@@ -2866,6 +2886,134 @@ const JobBoard = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Job Details Modal */}
+      <AnimatePresence>
+        {selectedJobDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setSelectedJobDetails(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl p-8 overflow-y-auto max-h-[90vh] z-10"
+            >
+              <button 
+                onClick={() => setSelectedJobDetails(null)}
+                className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+
+              <div className="mb-6 border-b border-slate-100 pb-6">
+                <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 uppercase tracking-wider">
+                  {selectedJobDetails.role_category}
+                </span>
+                <h2 className="text-3xl font-extrabold text-slate-900 mt-1 mb-2">{selectedJobDetails.title}</h2>
+                <div className="flex flex-wrap items-center gap-4 text-slate-500 font-medium text-sm">
+                  <span>{selectedJobDetails.company_name}</span>
+                  <span>•</span>
+                  <span>{selectedJobDetails.parish} Parish</span>
+                  <span>•</span>
+                  <span className="text-emerald-600 font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-4 h-4" /> Remote
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Job Description</h3>
+                  <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    {selectedJobDetails.description}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Configured Interview Formats</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getJobFormats(selectedJobDetails).map(format => (
+                      <span key={format} className="inline-block px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
+                        • {format}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100/60">
+                  <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Mail className="w-4 h-4 text-emerald-600" /> Contact & Inquiries
+                  </h3>
+                  <p className="text-slate-600 text-xs leading-relaxed">
+                    This job listing is managed by Amber's Healthcare. For any questions, application status updates, or other inquiries regarding this position, please reach out to our team directly at:
+                  </p>
+                  <p className="mt-3 text-sm font-bold text-emerald-700">
+                    <a href="mailto:contact@ambershealthcare.com" className="hover:underline">
+                      contact@ambershealthcare.com
+                    </a>
+                  </p>
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedJobDetails(null)}
+                    className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all text-sm cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  
+                  {interestSuccess === selectedJobDetails.id ? (
+                    <span className="flex-1 py-3 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm border border-emerald-100 flex items-center justify-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" /> Interest Expressed!
+                    </span>
+                  ) : appliedJobIds.includes(selectedJobDetails.id) ? (
+                    <button 
+                      disabled
+                      className="flex-1 py-3 rounded-xl bg-emerald-100 text-emerald-700 font-bold text-sm cursor-not-allowed flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle className="w-4 h-4 text-emerald-600" /> Applied / Under Matching
+                    </button>
+                  ) : user?.role === 'candidate' ? (
+                    <button 
+                      onClick={() => {
+                        const job = selectedJobDetails;
+                        setSelectedJobDetails(null);
+                        handleOpenApplicationModal(job);
+                      }}
+                      className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      Apply / Express Interest
+                    </button>
+                  ) : (user?.role === 'employer' || user?.role === 'admin') ? (
+                    <Link 
+                      to={user.role === 'admin' ? '/admin' : '/employer'} 
+                      onClick={() => setSelectedJobDetails(null)}
+                      className="flex-1 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all text-sm text-center cursor-pointer flex items-center justify-center"
+                    >
+                      Go to Dashboard
+                    </Link>
+                  ) : (
+                    <Link 
+                      to="/register" 
+                      onClick={() => setSelectedJobDetails(null)}
+                      className="flex-1 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all text-sm text-center cursor-pointer flex items-center justify-center"
+                    >
+                      Apply Now
+                    </Link>
+                  )}
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
