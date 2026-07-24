@@ -40,7 +40,7 @@ export const PRICING = {
 
 export const COMPANY_INFO = {
   NAME: "Amber's Healthcare",
-  OPERATING_ENTITY: "Ember Core Studio LLC",
+  OPERATING_ENTITY: "Amber's Healthcare",
   CONTACT_EMAIL: "contact@ambershealthcare.com"
 };
 

@@ -123,7 +123,7 @@ function dispatchNotification(recipientEmail: string | null, recipientPhone: str
             <div style="color: #334155; line-height: 1.6; font-size: 14px; white-space: pre-wrap; background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9;">${message}</div>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;" />
             <p style="color: #64748b; font-size: 12px; text-align: center; margin: 0;">
-              <strong>Amber's Healthcare</strong> • Operating under Ember Core Studio LLC<br/>
+              <strong>Amber's Healthcare</strong><br/>
               Contact: <a href="mailto:contact@ambershealthcare.com" style="color: #0284c7; text-decoration: none;">contact@ambershealthcare.com</a> | Website: <a href="https://ambershealthcare.com" style="color: #0284c7; text-decoration: none;">ambershealthcare.com</a>
             </p>
           </div>
@@ -220,12 +220,12 @@ async function startServer() {
   });
 
   // Seed Admin
-  const adminEmail = "amber@ambershealthcare.com";
+  const adminEmail = "contact@ambershealthcare.com";
   const existingAdmin = db.prepare("SELECT * FROM users WHERE email = ?").get(adminEmail);
   if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash("admin123", 10);
     db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(uuidv4(), adminEmail, hashedPassword, "admin");
-    logDebug("Admin user seeded: amber@ambershealthcare.com / admin123");
+    logDebug("Admin user seeded: contact@ambershealthcare.com / admin123");
   }
 
   // Auth Middleware
@@ -1143,11 +1143,11 @@ async function startServer() {
       if (status === 'paid_completed') {
         try {
           const referrerSubject = `$100 Referral Reward Paid! - ${referral.candidate_name}`;
-          const referrerMsg = `Hi ${referral.referrer_name},\n\nGreat news! Your referred candidate **${referral.candidate_name}** has successfully completed two (2) full pay periods with their employer.\n\nYour **$100.00 USD Referral Reward** has been confirmed and paid by Amber's Healthcare (Ember Core Studio LLC).\n\nThank you for helping us connect outstanding healthcare talent with top medical organizations!\n\nBest regards,\nAmber's Healthcare Team (Ember Core Studio LLC)`;
+          const referrerMsg = `Hi ${referral.referrer_name},\n\nGreat news! Your referred candidate **${referral.candidate_name}** has successfully completed two (2) full pay periods with their employer.\n\nYour **$100.00 USD Referral Reward** has been confirmed and paid by Amber's Healthcare.\n\nThank you for helping us connect outstanding healthcare talent with top medical organizations!\n\nBest regards,\nAmber's Healthcare Team`;
           dispatchNotification(referral.referrer_email, null, 'email', referrerSubject, referrerMsg);
 
           const candSubject = `Referral Milestone Reached! - Amber's Healthcare`;
-          const candMsg = `Hi ${referral.candidate_name},\n\nCongratulations! Your employer has confirmed that you have completed two (2) full pay periods. Your referrer **${referral.referrer_name}** has been issued their $100 referral reward.\n\nThank you for being a valued healthcare administrative professional on our platform!\n\nBest regards,\nAmber's Healthcare Team (Ember Core Studio LLC)`;
+          const candMsg = `Hi ${referral.candidate_name},\n\nCongratulations! Your employer has confirmed that you have completed two (2) full pay periods. Your referrer **${referral.referrer_name}** has been issued their $100 referral reward.\n\nThank you for being a valued healthcare administrative professional on our platform!\n\nBest regards,\nAmber's Healthcare Team`;
           dispatchNotification(referral.candidate_email, null, 'email', candSubject, candMsg);
 
           const adminUsers = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
@@ -1185,8 +1185,8 @@ async function startServer() {
       }
 
       // Confirmation to user
-      const userSubject = `Thank you for contacting Amber's Healthcare (Ember Core Studio LLC)`;
-      const userMsg = `Hi ${name.trim()},\n\nThank you for reaching out to Amber's Healthcare!\n\nWe have received your message regarding "${subject || 'General Inquiry'}". Our team will review your inquiry and respond within 24-48 business hours.\n\nBest regards,\nAmber's Healthcare Team\nOperating under Ember Core Studio LLC\ncontact@ambershealthcare.com`;
+      const userSubject = `Thank you for contacting Amber's Healthcare`;
+      const userMsg = `Hi ${name.trim()},\n\nThank you for reaching out to Amber's Healthcare!\n\nWe have received your message regarding "${subject || 'General Inquiry'}". Our team will review your inquiry and respond within 24-48 business hours.\n\nBest regards,\nAmber's Healthcare Team\ncontact@ambershealthcare.com`;
       dispatchNotification(email.trim(), null, 'email', userSubject, userMsg);
 
       res.json({ success: true, message: "Thank you for contacting us! Your message has been received and our team will get back to you shortly." });
@@ -1195,67 +1195,7 @@ async function startServer() {
     }
   });
 
-  // --- B2C/B2B Healthcare Matchmaker AI Underwriter Endpoint ---
-  app.post("/api/underwrite", (req, res) => {
-    try {
-      const payload = req.body || {};
-      const reqType = (payload.request_type || (payload.candidate_name ? "CANDIDATE" : "EMPLOYER")).toString().toUpperCase();
 
-      if (reqType === "CANDIDATE") {
-        const candidateName = payload.candidate_name || payload.full_name || "Job Seeker";
-        const currentLocation = payload.current_location || payload.location || payload.parish || "Global / Remote";
-        
-        return res.json({
-          request_type: "CANDIDATE",
-          candidate_name: candidateName,
-          current_location: currentLocation,
-          eligible: true,
-          next_action: "ADD_TO_REMOTE_TALENT_POOL"
-        });
-      }
-
-      // EMPLOYER UNDERWRITING
-      const facilityName = payload.facility_name || payload.company_name || payload.organization_name || "Healthcare Facility";
-      const rawState = (payload.state_location || payload.state || payload.parish || "").toString().trim();
-      
-      const allowedStates = [
-        "TEXAS", "TX",
-        "COLORADO", "CO",
-        "MISSOURI", "MO",
-        "IOWA", "IA",
-        "GEORGIA", "GA",
-        "IDAHO", "ID",
-        "UTAH", "UT"
-      ];
-
-      const cleanStateUpper = rawState.toUpperCase();
-      const isEligibleState = allowedStates.some(st => cleanStateUpper === st || cleanStateUpper.includes(st));
-
-      // Louisiana or non-deregulated state check
-      if (!isEligibleState || cleanStateUpper.includes("LOUISIANA") || cleanStateUpper === "LA") {
-        return res.json({
-          request_type: "EMPLOYER",
-          facility_name: facilityName,
-          state_location: rawState || "LOUISIANA (LA) / Non-Deregulated State",
-          eligible: false,
-          next_action: "SHOW_REGULATORY_BLOCK_MESSAGE",
-          contract_terms_snippet: "By completing the $4,500.00 checkout, Client agrees to contract the candidate directly under a 1099 framework. Client assumes full management liability. All fees are strictly 100% non-refundable once candidate accepts placement. Amber's Healthcare is an employer-fee-paid service; candidates are never billed."
-        });
-      }
-
-      return res.json({
-        request_type: "EMPLOYER",
-        facility_name: facilityName,
-        state_location: rawState,
-        eligible: true,
-        next_action: "REDIRECT_TO_PAYPAL_BUTTON",
-        contract_terms_snippet: "By completing the $4,500.00 checkout, Client agrees to contract the candidate directly under a 1099 framework. Client assumes full management liability. All fees are strictly 100% non-refundable once candidate accepts placement. Amber's Healthcare is an employer-fee-paid service; candidates are never billed."
-      });
-
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
 
 
   // --- Admin Routes ---

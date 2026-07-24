@@ -375,7 +375,7 @@ if (jobCount === 0) {
       jobId,
       employerProfile.id,
       "Marketing Associate",
-      "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare (operating under Ember Core Studio LLC). The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Remote administrative and marketing experience is preferred.",
+      "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare. The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Remote administrative and marketing experience is preferred.",
       "Texas (Remote)",
       "Marketing Associate"
     );
