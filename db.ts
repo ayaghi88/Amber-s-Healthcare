@@ -132,6 +132,10 @@ db.exec(`
     candidate_email TEXT NOT NULL,
     status TEXT CHECK(status IN ('pending', 'hired_waiting_pay_periods', 'paid_completed', 'rejected')) DEFAULT 'pending',
     employer_notes TEXT,
+    payout_status TEXT DEFAULT 'unpaid',
+    payout_method TEXT DEFAULT 'paypal',
+    payout_tx_id TEXT,
+    paid_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -171,6 +175,19 @@ try {
 try {
   db.exec("ALTER TABLE introductions ADD COLUMN status TEXT DEFAULT 'confirmed_match';");
   console.log("Successfully ran migration: Added status to introductions");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE referrals ADD COLUMN payout_status TEXT DEFAULT 'unpaid';");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE referrals ADD COLUMN payout_method TEXT DEFAULT 'paypal';");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE referrals ADD COLUMN payout_tx_id TEXT;");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE referrals ADD COLUMN paid_at DATETIME;");
 } catch (e) {}
 
 // --- Workspace JSON Backup & Restore System ---
@@ -263,11 +280,25 @@ export function restoreDatabase() {
     if (backupData.referrals) {
       db.prepare("DELETE FROM referrals").run();
       const insertReferral = db.prepare(`
-        INSERT INTO referrals (id, referrer_name, referrer_email, candidate_name, candidate_email, status, employer_notes, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO referrals (id, referrer_name, referrer_email, candidate_name, candidate_email, status, employer_notes, payout_status, payout_method, payout_tx_id, paid_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       for (const r of backupData.referrals) {
-        insertReferral.run(r.id, r.referrer_name, r.referrer_email, r.candidate_name, r.candidate_email, r.status, r.employer_notes, r.created_at, r.updated_at);
+        insertReferral.run(
+          r.id,
+          r.referrer_name,
+          r.referrer_email,
+          r.candidate_name,
+          r.candidate_email,
+          r.status,
+          r.employer_notes,
+          r.payout_status || (r.status === 'paid_completed' ? 'paid' : 'unpaid'),
+          r.payout_method || 'paypal',
+          r.payout_tx_id || null,
+          r.paid_at || null,
+          r.created_at,
+          r.updated_at
+        );
       }
     }
 
