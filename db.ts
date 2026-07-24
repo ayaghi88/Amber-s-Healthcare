@@ -332,60 +332,153 @@ export function restoreDatabase() {
 // Try restoring from backup first
 const didRestore = restoreDatabase();
 
-// If database has no job postings after restore attempt, seed the requested Marketing Associate job posting
+// Ensure comprehensive initial dataset exists (Jobs, Employers, Candidates)
 const jobCount = db.prepare("SELECT COUNT(*) as count FROM job_postings").get().count;
-if (jobCount === 0) {
+if (jobCount < 5) {
   try {
-    const employerEmail = "contact@ambershealthcare.com";
-    let employerUser = db.prepare("SELECT * FROM users WHERE email = ?").get(employerEmail);
-    
-    // Create employer user if it doesn't exist
-    if (!employerUser) {
-      const hashedPassword = bcrypt.hashSync("employer123", 10);
-      const userId = uuidv4();
-      db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, employerEmail, hashedPassword, "employer");
-      employerUser = { id: userId, email: employerEmail, role: "employer" };
+    const seedData = [
+      {
+        employerEmail: "contact@ambershealthcare.com",
+        companyName: "Amber's Healthcare Services",
+        contactName: "Amber Samantha Yaghi",
+        phone: "225-555-0199",
+        parish: "Texas (Deregulated)",
+        website: "https://ambershealthcare.com",
+        jobTitle: "Marketing Associate",
+        jobCategory: "Marketing Associate",
+        jobParish: "Texas (Remote)",
+        jobDescription: "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare. The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Remote administrative and marketing experience is preferred."
+      },
+      {
+        employerEmail: "hr@austinmedgroup.com",
+        companyName: "Austin Medical Group",
+        contactName: "Dr. Robert Vance",
+        phone: "512-555-0144",
+        parish: "Texas (Deregulated)",
+        website: "https://austinmedicalgroup.com",
+        jobTitle: "Remote Patient Intake Coordinator",
+        jobCategory: "Patient Intake Coordinator",
+        jobParish: "Texas (Remote)",
+        jobDescription: "Austin Medical Group is hiring a Remote Patient Intake Coordinator to manage new patient registration, insurance verification, and electronic medical records intake. Must have strong phone etiquette and medical software proficiency."
+      },
+      {
+        employerEmail: "careers@denverhealthpartners.com",
+        companyName: "Denver Health Partners",
+        contactName: "Sarah Miller, Practice Admin",
+        phone: "303-555-0188",
+        parish: "Colorado (Deregulated)",
+        website: "https://denverhealthpartners.com",
+        jobTitle: "Remote Medical Billing & Claims Specialist",
+        jobCategory: "Medical Biller / Coder",
+        jobParish: "Colorado (Remote)",
+        jobDescription: "Denver Health Partners seeks a Remote Medical Billing Specialist to handle medical claims processing, ICD-10 coding, EMR auditing, and claim denial follow-ups for our outpatient specialty clinics."
+      },
+      {
+        employerEmail: "jobs@heartlandhealth.org",
+        companyName: "Heartland Health Clinic",
+        contactName: "David Thornton",
+        phone: "314-555-0122",
+        parish: "Missouri (Deregulated)",
+        website: "https://heartlandhealth.org",
+        jobTitle: "Remote Practice Operations Lead",
+        jobCategory: "Practice Operations / Practice Management",
+        jobParish: "Missouri (Remote)",
+        jobDescription: "Heartland Health Clinic is recruiting a Remote Practice Operations Lead to oversee administrative workflows, staff scheduling, patient communication protocols, and practice billing compliance."
+      },
+      {
+        employerEmail: "recruiting@atlantacarealliance.com",
+        companyName: "Atlanta Care Alliance",
+        contactName: "Jennifer Lawson",
+        phone: "404-555-0166",
+        parish: "Georgia (Deregulated)",
+        website: "https://atlantacarealliance.com",
+        jobTitle: "Remote Medical Prior Authorization Coordinator",
+        jobCategory: "Patient Intake Coordinator",
+        jobParish: "Georgia (Remote)",
+        jobDescription: "Atlanta Care Alliance is seeking a Remote Medical Prior Authorization Coordinator to process prior authorization requests with commercial and Medicaid insurers, verify benefits, and coordinate with clinical teams."
+      }
+    ];
+
+    for (const item of seedData) {
+      let employerUser = db.prepare("SELECT * FROM users WHERE email = ?").get(item.employerEmail);
+      if (!employerUser) {
+        const hashedPassword = bcrypt.hashSync("employer123", 10);
+        const userId = uuidv4();
+        db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, item.employerEmail, hashedPassword, "employer");
+        employerUser = { id: userId, email: item.employerEmail, role: "employer" };
+      }
+
+      let employerProfile = db.prepare("SELECT * FROM employers WHERE user_id = ?").get(employerUser.id);
+      if (!employerProfile) {
+        const profileId = uuidv4();
+        db.prepare(`
+          INSERT INTO employers (id, user_id, company_name, contact_name, phone, parish, website, accepted_agreement_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `).run(profileId, employerUser.id, item.companyName, item.contactName, item.phone, item.parish, item.website);
+        employerProfile = { id: profileId };
+      }
+
+      const existingJob = db.prepare("SELECT * FROM job_postings WHERE employer_id = ? AND title = ?").get(employerProfile.id, item.jobTitle);
+      if (!existingJob) {
+        const jobId = uuidv4();
+        db.prepare(`
+          INSERT INTO job_postings (id, employer_id, title, description, parish, role_category, status)
+          VALUES (?, ?, ?, ?, ?, ?, 'open')
+        `).run(jobId, employerProfile.id, item.jobTitle, item.jobDescription, item.jobParish, item.jobCategory);
+      }
     }
-    
-    // Create employer profile if it doesn't exist
-    let employerProfile = db.prepare("SELECT * FROM employers WHERE user_id = ?").get(employerUser.id);
-    if (!employerProfile) {
-      const profileId = uuidv4();
-      db.prepare(`
-        INSERT INTO employers (id, user_id, company_name, contact_name, phone, parish, website, accepted_agreement_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `).run(
-        profileId,
-        employerUser.id,
-        "Amber's Healthcare",
-        "Amber Samantha Yaghi",
-        "225-555-0199",
-        "Texas (Deregulated)",
-        "https://ambershealthcare.com"
-      );
-      employerProfile = { id: profileId };
+
+    // Seed candidate profiles if missing
+    const candidateSeeds = [
+      {
+        email: "sarah.jenkins@example.com",
+        fullName: "Sarah Jenkins",
+        phone: "225-555-0133",
+        parish: "Texas (Deregulated)",
+        specialties: JSON.stringify(["Medical Biller / Coder", "Patient Intake Coordinator"]),
+        summary: "Certified professional medical biller with 6+ years of experience managing outpatient billing, prior authorizations, and claims resolution for multispecialty practices."
+      },
+      {
+        email: "marcus.vance@example.com",
+        fullName: "Marcus Vance",
+        phone: "512-555-0199",
+        parish: "Texas (Deregulated)",
+        specialties: JSON.stringify(["Patient Intake Coordinator", "Front Desk (remote)"]),
+        summary: "Experienced remote patient coordinator skilled in EMR data entry, appointment scheduling, insurance verification, and compassionate patient communication."
+      },
+      {
+        email: "elena.rostova@example.com",
+        fullName: "Elena Rostova",
+        phone: "303-555-0177",
+        parish: "Colorado (Deregulated)",
+        specialties: JSON.stringify(["Marketing Associate", "Practice Operations / Practice Management"]),
+        summary: "Healthcare digital marketing specialist with 4+ years of experience running social media campaigns, provider referral outreach, and practice growth initiatives."
+      }
+    ];
+
+    for (const cand of candidateSeeds) {
+      let candUser = db.prepare("SELECT * FROM users WHERE email = ?").get(cand.email);
+      if (!candUser) {
+        const hashedPassword = bcrypt.hashSync("candidate123", 10);
+        const userId = uuidv4();
+        db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, cand.email, hashedPassword, "candidate");
+        candUser = { id: userId, email: cand.email, role: "candidate" };
+      }
+
+      let candProfile = db.prepare("SELECT * FROM candidates WHERE user_id = ?").get(candUser.id);
+      if (!candProfile) {
+        const profileId = uuidv4();
+        db.prepare(`
+          INSERT INTO candidates (id, user_id, full_name, phone, parish, role_specialties, experience_summary, status, accepted_terms_at, contact_preference, interview_preference)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, 'Email', 'Virtual Video Call')
+        `).run(profileId, candUser.id, cand.fullName, cand.phone, cand.parish, cand.specialties, cand.summary);
+      }
     }
-    
-    // Insert Marketing Associate job posting
-    const jobId = uuidv4();
-    db.prepare(`
-      INSERT INTO job_postings (id, employer_id, title, description, parish, role_category, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'open')
-    `).run(
-      jobId,
-      employerProfile.id,
-      "Marketing Associate",
-      "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare. The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Remote administrative and marketing experience is preferred.",
-      "Texas (Remote)",
-      "Marketing Associate"
-    );
-    
-    console.log("Successfully seeded Marketing Associate job posting for Amber's Healthcare.");
-    
-    // Save to backup file
+
+    console.log("Successfully seeded initial remote healthcare jobs, employers, and candidates.");
     backupDatabase();
   } catch (err: any) {
-    console.error("Failed to seed initial Marketing Associate job:", err.message);
+    console.error("Failed to seed initial remote healthcare dataset:", err.message);
   }
 }
 
