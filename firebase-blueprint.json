@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User profiles and authorization records",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["candidate", "employer", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "candidates": {
+      "title": "Candidate Profile",
+      "description": "Healthcare candidate profiles",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "parish": {
+          "type": "string"
+        },
+        "roleSpecialties": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "userId", "fullName"]
+    },
+    "employers": {
+      "title": "Employer Profile",
+      "description": "Healthcare employer profiles",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "companyName": {
+          "type": "string"
+        },
+        "contactName": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "parish": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "userId", "companyName"]
+    }
+  }
+}
