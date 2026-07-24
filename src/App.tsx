@@ -4614,10 +4614,14 @@ const PayPalPaymentModal = ({ invoice, onClose, onSuccess }: { invoice: any, onC
 
   useEffect(() => {
     if (sdkReady && config?.paypalClientId) {
+      const container = document.getElementById("paypal-button-container");
+      if (container) {
+        container.innerHTML = "";
+      }
       // @ts-ignore
-      if (window.paypal) {
+      if (window.paypal && container) {
         // @ts-ignore
-        window.paypal.Buttons({
+        const buttons = window.paypal.Buttons({
           createOrder: async () => {
             try {
               const res = await fetch("/api/paypal/create-order", {
@@ -4660,10 +4664,18 @@ const PayPalPaymentModal = ({ invoice, onClose, onSuccess }: { invoice: any, onC
             console.error("PayPal Error", err);
             setErrorMessage("An error occurred with PayPal checkout.");
           }
-        }).render("#paypal-button-container");
+        });
+        
+        buttons.render("#paypal-button-container");
+
+        return () => {
+          if (container) {
+            container.innerHTML = "";
+          }
+        };
       }
     }
-  }, [sdkReady, config]);
+  }, [sdkReady, config, invoice?.id]);
 
   const simulatePayment = async () => {
     setPaying(true);
