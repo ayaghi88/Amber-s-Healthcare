@@ -59,30 +59,9 @@ function findUserByEmail(email: string) {
   const norm = (email || "").trim().toLowerCase();
   if (!norm) return null;
   
-  // Try exact match first
-  const users = db.prepare("SELECT * FROM users").all() as any[];
-  const exact = users.find(u => (u.email || "").toLowerCase().trim() === norm);
-  if (exact) return exact;
-
-  // Try fuzzy match for typing mistakes (Levenshtein distance <= 2)
-  let bestMatch: any = null;
-  let bestDistance = Infinity;
-  for (const u of users) {
-    const uEmail = (u.email || "").toLowerCase().trim();
-    if (!uEmail) continue;
-    const distance = getLevenshteinDistance(norm, uEmail);
-    if (distance <= 2 && distance < bestDistance) {
-      bestDistance = distance;
-      bestMatch = u;
-    }
-  }
-
-  if (bestMatch) {
-    logDebug(`[FUZZY MATCH] Resolved input "${email}" to registered user "${bestMatch.email}" (Distance: ${bestDistance})`);
-    return bestMatch;
-  }
-
-  return null;
+  // Exact normalized match only
+  const user = db.prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ?").get(norm) as any;
+  return user || null;
 }
 
 // Email transport using nodemailer
@@ -265,9 +244,11 @@ async function startServer() {
         return res.status(400).json({ error: "An account with this email address already exists." });
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const cleanPassword = (password || "").trim();
+      const hashedPassword = await bcrypt.hash(cleanPassword, 10);
       const userId = uuidv4();
       db.prepare("INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)").run(userId, normalizedEmail, hashedPassword, role);
+      backupDatabase();
       
       const token = jwt.sign({ id: userId, email: normalizedEmail, role }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("token", token, { 
@@ -293,7 +274,12 @@ async function startServer() {
         return res.status(401).json({ error: "Invalid credentials" });
       }
       
-      const isMatch = await bcrypt.compare(password, user.password);
+      const cleanPassword = (password || "").trim();
+      let isMatch = await bcrypt.compare(cleanPassword, user.password);
+      if (!isMatch && password !== cleanPassword) {
+        isMatch = await bcrypt.compare(password, user.password);
+      }
+
       if (!isMatch) {
         logDebug(`Login rejected: Password mismatch - ${email}`);
         return res.status(401).json({ error: "Invalid credentials" });
@@ -319,7 +305,8 @@ async function startServer() {
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
-    if (!newPassword || newPassword.trim().length < 6) {
+    const cleanNewPassword = (newPassword || "").trim();
+    if (!cleanNewPassword || cleanNewPassword.length < 6) {
       return res.status(400).json({ error: "Please enter a valid new password (at least 6 characters)." });
     }
 
@@ -330,8 +317,10 @@ async function startServer() {
         return res.status(404).json({ error: "No account found with this email address." });
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const hashedPassword = await bcrypt.hash(cleanNewPassword, 10);
       db.prepare("UPDATE users SET password = ? WHERE id = ?").run(hashedPassword, user.id);
+      backupDatabase();
+
       logDebug(`Reset password success: ${email} (resolved to: ${user.email})`);
       res.json({ success: true, message: "Your password has been successfully reset. You can now log in with your new password!" });
     } catch (err: any) {

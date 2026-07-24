@@ -45,9 +45,58 @@
     {
       "id": "aed11ffa-7260-423c-88e8-00c222c3cf49",
       "email": "contact@kaleidoscopicacademy.com",
-      "password": "$2b$10$hc2ZKVACxLyYmibufLR/POnzSsGlDJllHHVwMb6DcN6okEcWAWpIy",
+      "password": "$2b$10$.NamMq.U9ogN/SJc7CjOreHY2deC2/XuEU4/YxVKVm/7ucCXSd4RO",
       "role": "candidate",
       "created_at": "2026-07-24 05:46:32"
+    },
+    {
+      "id": "b3f12ac6-1d9b-444c-b5e8-527e4ef852db",
+      "email": "hr@austinmedgroup.com",
+      "password": "$2b$10$dlj2B4MXIk76trzMkaW4v.fguaCRznrDceVT/gq1NP92cDCLuP5vW",
+      "role": "employer",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "2bdfd338-1277-424a-bcd1-03113db53c16",
+      "email": "careers@denverhealthpartners.com",
+      "password": "$2b$10$eaXxVqnuDSb5bth.iw4e.eeFp3CIe63FdGLIf9L5sh6pSOi3Fmsvi",
+      "role": "employer",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "2e4d35bb-5c75-4283-bd62-9271ebda152f",
+      "email": "jobs@heartlandhealth.org",
+      "password": "$2b$10$QRSgZjpMGfZl6RFAK3PHg.DMs.Oox1VnQF2FkeAC/8hUevx8Wdp5O",
+      "role": "employer",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "1bfde665-d4ac-46b2-ad24-19193f8f0f6c",
+      "email": "recruiting@atlantacarealliance.com",
+      "password": "$2b$10$m5rFu0FZ6p1Wtkvyqxe19.PqWdt6pPEAaG/WL.0U.jtBzPM3XgcLG",
+      "role": "employer",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "1ce6c4d6-a51f-45b5-9b41-e31f24843ffb",
+      "email": "sarah.jenkins@example.com",
+      "password": "$2b$10$VOjzTarK10mYQG2OYqyePeRaCAPRjp62qrKd.U/ld/IX3RXx6xWAm",
+      "role": "candidate",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "874eada0-5d7c-4e92-8346-ffd2a607a5d2",
+      "email": "marcus.vance@example.com",
+      "password": "$2b$10$kmoJiXz8wbR5lzjDVv2tU.gmXbZ3foipkqnRTob86FSAvmErHEtQG",
+      "role": "candidate",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "9d1bcc63-825b-4e76-96c2-ec6ba11a3d86",
+      "email": "elena.rostova@example.com",
+      "password": "$2b$10$d.CxaE7cQXIm7PkFn.VD0e9FkdFEg1DB59lx2OOjnICBQ2NZboye.",
+      "role": "candidate",
+      "created_at": "2026-07-24 07:58:40"
     }
   ],
   "candidates": [
@@ -92,6 +141,48 @@
       "accepted_terms_at": "2026-07-24 05:46:38",
       "contact_preference": "Email",
       "interview_preference": "Virtual Video Call"
+    },
+    {
+      "id": "3ef69224-4780-431d-819d-3b050c747010",
+      "user_id": "1ce6c4d6-a51f-45b5-9b41-e31f24843ffb",
+      "full_name": "Sarah Jenkins",
+      "phone": "225-555-0133",
+      "parish": "Texas (Deregulated)",
+      "role_specialties": "[\"Medical Biller / Coder\",\"Patient Intake Coordinator\"]",
+      "experience_summary": "Certified professional medical biller with 6+ years of experience managing outpatient billing, prior authorizations, and claims resolution for multispecialty practices.",
+      "resume_url": null,
+      "status": "active",
+      "accepted_terms_at": "2026-07-24 07:58:40",
+      "contact_preference": "Email",
+      "interview_preference": "Virtual Video Call"
+    },
+    {
+      "id": "95486489-d836-4ef2-a23d-d0abe5454db3",
+      "user_id": "874eada0-5d7c-4e92-8346-ffd2a607a5d2",
+      "full_name": "Marcus Vance",
+      "phone": "512-555-0199",
+      "parish": "Texas (Deregulated)",
+      "role_specialties": "[\"Patient Intake Coordinator\",\"Front Desk (remote)\"]",
+      "experience_summary": "Experienced remote patient coordinator skilled in EMR data entry, appointment scheduling, insurance verification, and compassionate patient communication.",
+      "resume_url": null,
+      "status": "active",
+      "accepted_terms_at": "2026-07-24 07:58:40",
+      "contact_preference": "Email",
+      "interview_preference": "Virtual Video Call"
+    },
+    {
+      "id": "44ed5b7d-2d41-4bc8-8757-e6000dac7995",
+      "user_id": "9d1bcc63-825b-4e76-96c2-ec6ba11a3d86",
+      "full_name": "Elena Rostova",
+      "phone": "303-555-0177",
+      "parish": "Colorado (Deregulated)",
+      "role_specialties": "[\"Marketing Associate\",\"Practice Operations / Practice Management\"]",
+      "experience_summary": "Healthcare digital marketing specialist with 4+ years of experience running social media campaigns, provider referral outreach, and practice growth initiatives.",
+      "resume_url": null,
+      "status": "active",
+      "accepted_terms_at": "2026-07-24 07:58:40",
+      "contact_preference": "Email",
+      "interview_preference": "Virtual Video Call"
     }
   ],
   "employers": [
@@ -105,6 +196,50 @@
       "website": "https://ambershealthcare.com",
       "stripe_customer_id": null,
       "accepted_agreement_at": "2026-07-09 19:56:04"
+    },
+    {
+      "id": "7561c9cb-01e8-4812-87d2-a76b8c01279e",
+      "user_id": "b3f12ac6-1d9b-444c-b5e8-527e4ef852db",
+      "company_name": "Austin Medical Group",
+      "contact_name": "Dr. Robert Vance",
+      "phone": "512-555-0144",
+      "parish": "Texas (Deregulated)",
+      "website": "https://austinmedicalgroup.com",
+      "stripe_customer_id": null,
+      "accepted_agreement_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "205b32b5-58f0-4923-8531-b5ac3fe81e2d",
+      "user_id": "2bdfd338-1277-424a-bcd1-03113db53c16",
+      "company_name": "Denver Health Partners",
+      "contact_name": "Sarah Miller, Practice Admin",
+      "phone": "303-555-0188",
+      "parish": "Colorado (Deregulated)",
+      "website": "https://denverhealthpartners.com",
+      "stripe_customer_id": null,
+      "accepted_agreement_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "30c9eb26-1c7e-44ef-9a14-683bb1ee57d6",
+      "user_id": "2e4d35bb-5c75-4283-bd62-9271ebda152f",
+      "company_name": "Heartland Health Clinic",
+      "contact_name": "David Thornton",
+      "phone": "314-555-0122",
+      "parish": "Missouri (Deregulated)",
+      "website": "https://heartlandhealth.org",
+      "stripe_customer_id": null,
+      "accepted_agreement_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "8a124110-ef38-4159-b7a2-172756612862",
+      "user_id": "1bfde665-d4ac-46b2-ad24-19193f8f0f6c",
+      "company_name": "Atlanta Care Alliance",
+      "contact_name": "Jennifer Lawson",
+      "phone": "404-555-0166",
+      "parish": "Georgia (Deregulated)",
+      "website": "https://atlantacarealliance.com",
+      "stripe_customer_id": null,
+      "accepted_agreement_at": "2026-07-24 07:58:40"
     }
   ],
   "job_postings": [
@@ -118,6 +253,50 @@
       "status": "open",
       "interview_formats": "[\"Virtual Video Call\", \"Phone-Only Interview\", \"Written Questionnaire / Email Interview\", \"Virtual Video Call (Questions provided 48h in advance)\"]",
       "created_at": "2026-07-09 19:56:04"
+    },
+    {
+      "id": "dcb84018-535f-42d2-9ed6-0455620f4bbe",
+      "employer_id": "7561c9cb-01e8-4812-87d2-a76b8c01279e",
+      "title": "Remote Patient Intake Coordinator",
+      "description": "Austin Medical Group is hiring a Remote Patient Intake Coordinator to manage new patient registration, insurance verification, and electronic medical records intake. Must have strong phone etiquette and medical software proficiency.",
+      "parish": "Texas (Remote)",
+      "role_category": "Patient Intake Coordinator",
+      "status": "open",
+      "interview_formats": "[\"Virtual Video Call\", \"Phone-Only Interview\", \"Written Questionnaire / Email Interview\", \"Virtual Video Call (Questions provided 48h in advance)\"]",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "6ce6662a-d796-45f2-accd-4cf889302d8d",
+      "employer_id": "205b32b5-58f0-4923-8531-b5ac3fe81e2d",
+      "title": "Remote Medical Billing & Claims Specialist",
+      "description": "Denver Health Partners seeks a Remote Medical Billing Specialist to handle medical claims processing, ICD-10 coding, EMR auditing, and claim denial follow-ups for our outpatient specialty clinics.",
+      "parish": "Colorado (Remote)",
+      "role_category": "Medical Biller / Coder",
+      "status": "open",
+      "interview_formats": "[\"Virtual Video Call\", \"Phone-Only Interview\", \"Written Questionnaire / Email Interview\", \"Virtual Video Call (Questions provided 48h in advance)\"]",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "71ef677e-cd6b-48dc-8f28-35ded38bca15",
+      "employer_id": "30c9eb26-1c7e-44ef-9a14-683bb1ee57d6",
+      "title": "Remote Practice Operations Lead",
+      "description": "Heartland Health Clinic is recruiting a Remote Practice Operations Lead to oversee administrative workflows, staff scheduling, patient communication protocols, and practice billing compliance.",
+      "parish": "Missouri (Remote)",
+      "role_category": "Practice Operations / Practice Management",
+      "status": "open",
+      "interview_formats": "[\"Virtual Video Call\", \"Phone-Only Interview\", \"Written Questionnaire / Email Interview\", \"Virtual Video Call (Questions provided 48h in advance)\"]",
+      "created_at": "2026-07-24 07:58:40"
+    },
+    {
+      "id": "8521a132-65c8-4d21-ac34-5151b9fb673a",
+      "employer_id": "8a124110-ef38-4159-b7a2-172756612862",
+      "title": "Remote Medical Prior Authorization Coordinator",
+      "description": "Atlanta Care Alliance is seeking a Remote Medical Prior Authorization Coordinator to process prior authorization requests with commercial and Medicaid insurers, verify benefits, and coordinate with clinical teams.",
+      "parish": "Georgia (Remote)",
+      "role_category": "Patient Intake Coordinator",
+      "status": "open",
+      "interview_formats": "[\"Virtual Video Call\", \"Phone-Only Interview\", \"Written Questionnaire / Email Interview\", \"Virtual Video Call (Questions provided 48h in advance)\"]",
+      "created_at": "2026-07-24 07:58:40"
     }
   ],
   "referrals": [
