@@ -1168,6 +1168,33 @@ async function startServer() {
     }
   });
 
+  // --- Contact Route ---
+  app.post("/api/contact", (req, res) => {
+    const { name, email, phone, subject, user_type, message } = req.body || {};
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: "Name, email, and message are required." });
+    }
+
+    try {
+      // Notify Admin
+      const adminUsers = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
+      for (const admin of adminUsers) {
+        const adminSubject = `[Inquiry] ${subject || 'New Contact Form Submission'} from ${name}`;
+        const adminMsg = `Contact Form Inquiry Received:\n- Name: ${name}\n- Email: ${email}\n- Phone: ${phone || 'N/A'}\n- User Type: ${user_type || 'General'}\n- Subject: ${subject || 'General Inquiry'}\n\nMessage:\n${message}`;
+        dispatchNotification(admin.email, null, 'email', adminSubject, adminMsg);
+      }
+
+      // Confirmation to user
+      const userSubject = `Thank you for contacting Amber's Healthcare (Ember Core Studio LLC)`;
+      const userMsg = `Hi ${name.trim()},\n\nThank you for reaching out to Amber's Healthcare!\n\nWe have received your message regarding "${subject || 'General Inquiry'}". Our team will review your inquiry and respond within 24-48 business hours.\n\nBest regards,\nAmber's Healthcare Team\nOperating under Ember Core Studio LLC\ncontact@ambershealthcare.com`;
+      dispatchNotification(email.trim(), null, 'email', userSubject, userMsg);
+
+      res.json({ success: true, message: "Thank you for contacting us! Your message has been received and our team will get back to you shortly." });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // --- B2C/B2B Healthcare Matchmaker AI Underwriter Endpoint ---
   app.post("/api/underwrite", (req, res) => {
     try {

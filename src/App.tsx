@@ -38,7 +38,10 @@ import {
   ChevronUp,
   HelpCircle,
   Lock,
-  ShieldAlert
+  ShieldAlert,
+  Send,
+  Clock,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "./lib/utils";
 import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
@@ -141,6 +144,7 @@ const Navbar = () => {
             <Link to="/jobs" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Find Jobs</Link>
             <Link to="/pricing" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pricing</Link>
             <Link to="/faq" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">FAQ / Q&A</Link>
+            <Link to="/contact" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Contact Us</Link>
             <Link to="/refer" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors flex items-center gap-1.5">
               <Gift className="w-4 h-4 text-emerald-600" /> Refer & Earn $100
             </Link>
@@ -197,6 +201,7 @@ const Navbar = () => {
               <Link to="/jobs" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Find Jobs</Link>
               <Link to="/pricing" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Pricing</Link>
               <Link to="/faq" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>FAQ / Q&A</Link>
+              <Link to="/contact" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Contact Us</Link>
               <Link to="/refer" className="block text-lg font-medium text-slate-700 flex items-center gap-2" onClick={() => setIsOpen(false)}>
                 <Gift className="w-5 h-5 text-emerald-600" /> Refer & Earn $100
               </Link>
@@ -259,7 +264,8 @@ const Footer = () => (
             <li><Link to="/jobs" className="hover:text-emerald-600 transition-colors">Find Jobs</Link></li>
             <li><Link to="/pricing" className="hover:text-emerald-600 transition-colors">Pricing</Link></li>
             <li><Link to="/service-area" className="hover:text-emerald-600 transition-colors">Service Area</Link></li>
-            <li><Link to="/faq" className="hover:text-emerald-600 transition-colors font-medium text-slate-800">FAQ / Q&A</Link></li>
+            <li><Link to="/contact" className="hover:text-emerald-600 transition-colors font-medium text-slate-800">Contact Us</Link></li>
+            <li><Link to="/faq" className="hover:text-emerald-600 transition-colors">FAQ / Q&A</Link></li>
             <li><Link to="/refer" className="hover:text-emerald-600 transition-colors font-medium text-emerald-700 flex items-center gap-1">🎁 Refer & Earn $100</Link></li>
           </ul>
         </div>
@@ -810,6 +816,7 @@ export default function App() {
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/refer" element={<ReferProgram />} />
+              <Route path="/contact" element={<ContactUs />} />
               <Route path="/underwriter" element={<UnderwriterTool />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Routes>
@@ -5112,3 +5119,248 @@ const UnderwriterTool = () => {
     </div>
   );
 };
+
+const ContactUs = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [userType, setUserType] = useState("employer");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      setFeedback({ type: 'error', text: 'Please fill in all required fields (Name, Email, Message).' });
+      return;
+    }
+
+    setLoading(true);
+    setFeedback(null);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          user_type: userType,
+          subject: subject.trim(),
+          message: message.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send message.");
+
+      setFeedback({ type: 'success', text: data.message || "Thank you! Your inquiry has been sent successfully." });
+      setName("");
+      setEmail("");
+      setPhone("");
+      setSubject("");
+      setMessage("");
+    } catch (err: any) {
+      setFeedback({ type: 'error', text: err.message || "An error occurred while submitting your message." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="pt-32 pb-24 max-w-5xl mx-auto px-4 sm:px-6">
+      {/* Header */}
+      <div className="text-center mb-12">
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full mb-3 uppercase tracking-wider border border-emerald-200/50">
+          Official Support &amp; Inquiries
+        </span>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">
+          Contact Amber’s Healthcare
+        </h1>
+        <p className="text-slate-600 max-w-2xl mx-auto text-base">
+          Have questions about our $4,500 flat-fee employer matchmaking, global remote talent pool, or $100 referral reward program? Our team is here to assist you.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Official Details & Legal Entity */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-emerald-600" /> Entity &amp; Contact Details
+            </h2>
+
+            <div className="space-y-4 text-sm text-slate-600">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600 shrink-0 mt-0.5">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="block text-slate-900 font-semibold">Official Business Email</strong>
+                  <a href="mailto:contact@ambershealthcare.com" className="text-emerald-600 font-medium hover:underline">
+                    contact@ambershealthcare.com
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600 shrink-0 mt-0.5">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="block text-slate-900 font-semibold">Operating Entity</strong>
+                  <span>Amber's Healthcare</span>
+                  <span className="block text-xs text-slate-400">Operating under Ember Core Studio LLC</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600 shrink-0 mt-0.5">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="block text-slate-900 font-semibold">Business Support Hours</strong>
+                  <span>Monday – Friday: 8:00 AM – 5:00 PM CST</span>
+                  <span className="block text-xs text-slate-400 mt-0.5">Responses guaranteed within 24–48 business hours</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600 shrink-0 mt-0.5">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="block text-slate-900 font-semibold">Employer Jurisdiction Coverage</strong>
+                  <span className="text-xs">
+                    Paying employers in deregulated states (TX, CO, MO, IA, GA, ID, UT). Job seekers supported globally for remote administrative roles.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Guarantee & Compliance Banner */}
+          <div className="bg-slate-900 text-slate-100 p-6 rounded-3xl space-y-3">
+            <h3 className="font-bold text-sm text-white flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-emerald-400" /> Statutory Compliance Highlights
+            </h3>
+            <ul className="text-xs text-slate-300 space-y-2 list-disc pl-4 leading-relaxed">
+              <li><strong>Zero Fee for Job Seekers:</strong> Candidates are never charged a fee under any circumstance.</li>
+              <li><strong>$4,500 Employer Placement Fee:</strong> One-time upfront fee for healthcare clients.</li>
+              <li><strong>100% Non-Refundable Policy:</strong> Fees are non-refundable once a candidate accepts a 1099 contractor placement offer.</li>
+              <li><strong>$100 Referral Fee Payout:</strong> Automated upon completion of 2 full pay periods.</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Right Column: Contact Form */}
+        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <h2 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-emerald-600" /> Send Us a Message
+          </h2>
+          <p className="text-slate-500 text-sm mb-6">
+            Fill out the form below and an Amber’s Healthcare representative will respond promptly.
+          </p>
+
+          {feedback && (
+            <div className={cn("p-4 rounded-2xl mb-6 text-sm flex items-start gap-3", feedback.type === 'success' ? "bg-emerald-50 text-emerald-900 border border-emerald-200" : "bg-red-50 text-red-900 border border-red-200")}>
+              {feedback.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />}
+              <div>{feedback.text}</div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Your Full Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Dr. Sarah Jenkins"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Your Email Address <span className="text-red-500">*</span></label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="e.g. sjenkins@clinic.com"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number (Optional)</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="e.g. (225) 555-0199"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">I am a...</label>
+                <select
+                  value={userType}
+                  onChange={e => setUserType(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 transition-colors bg-white"
+                >
+                  <option value="employer">Healthcare Employer / Facility Client</option>
+                  <option value="candidate">Job Seeker / Administrative Professional</option>
+                  <option value="referrer">Community Referrer ($100 Reward Inquiry)</option>
+                  <option value="general">General Inquirer / Partnership</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Subject</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                placeholder="e.g. Employer 1099 Placement Inquiry for Medical Billing"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Message <span className="text-red-500">*</span></label>
+              <textarea
+                required
+                rows={5}
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder="Please describe your inquiry or requirements in detail..."
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-emerald-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              Send Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+

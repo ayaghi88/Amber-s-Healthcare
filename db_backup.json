@@ -343,6 +343,46 @@
       "message": "Hi Hrrhttt,\n\nYou have successfully expressed interest in the position of **Marketing Associate** at **Amber's Healthcare Services**.\n\nOur placement team is currently reviewing your profile to confirm this match with the employer. We will send you a confirmation email once the match is officially confirmed!\n\nThank you,\nAmber's Healthcare Team",
       "status": "sent",
       "created_at": "2026-07-24 05:51:53"
+    },
+    {
+      "id": "6691202c-8d2c-4936-af9a-f76eb9c1177e",
+      "recipient_email": "amber@ambershealthcare.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "[Inquiry] Placement Question from Dr. Sarah",
+      "message": "Contact Form Inquiry Received:\n- Name: Dr. Sarah\n- Email: sarah@clinic.com\n- Phone: N/A\n- User Type: General\n- Subject: Placement Question\n\nMessage:\nHello Amber Health team",
+      "status": "sent",
+      "created_at": "2026-07-24 07:11:27"
+    },
+    {
+      "id": "ddaba35c-3f6f-43f8-8fb1-45231b752e9d",
+      "recipient_email": "ambersamanthayaghi@gmail.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "[Admin Notification Copy] [Inquiry] Placement Question from Dr. Sarah",
+      "message": "Contact Form Inquiry Received:\n- Name: Dr. Sarah\n- Email: sarah@clinic.com\n- Phone: N/A\n- User Type: General\n- Subject: Placement Question\n\nMessage:\nHello Amber Health team",
+      "status": "sent",
+      "created_at": "2026-07-24 07:11:27"
+    },
+    {
+      "id": "4a7a4497-31bf-443d-9caa-5fa76a640f75",
+      "recipient_email": "sarah@clinic.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "Thank you for contacting Amber's Healthcare (Ember Core Studio LLC)",
+      "message": "Hi Dr. Sarah,\n\nThank you for reaching out to Amber's Healthcare!\n\nWe have received your message regarding \"Placement Question\". Our team will review your inquiry and respond within 24-48 business hours.\n\nBest regards,\nAmber's Healthcare Team\nOperating under Ember Core Studio LLC\ncontact@ambershealthcare.com",
+      "status": "sent",
+      "created_at": "2026-07-24 07:11:27"
+    },
+    {
+      "id": "cba7b321-a240-47b8-ade6-c0396b2fdfa1",
+      "recipient_email": "ambersamanthayaghi@gmail.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "[Admin Notification Copy] Thank you for contacting Amber's Healthcare (Ember Core Studio LLC)",
+      "message": "Hi Dr. Sarah,\n\nThank you for reaching out to Amber's Healthcare!\n\nWe have received your message regarding \"Placement Question\". Our team will review your inquiry and respond within 24-48 business hours.\n\nBest regards,\nAmber's Healthcare Team\nOperating under Ember Core Studio LLC\ncontact@ambershealthcare.com",
+      "status": "sent",
+      "created_at": "2026-07-24 07:11:27"
     }
   ]
 }
