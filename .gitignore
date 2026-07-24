@@ -12,3 +12,6 @@ coverage/
 *.db-journal
 *.db-shm
 *.db-wal
+
+# Firebase config
+firebase-applet-config.json

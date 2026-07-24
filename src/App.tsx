@@ -1688,19 +1688,19 @@ const CandidateDashboard = () => {
         </div>
         <div className="divide-y divide-slate-100">
           {notifications.map(n => (
-            <div key={n.id} className="p-6 hover:bg-slate-50/50 transition-colors space-y-3">
-              <div className="flex justify-between items-center">
+            <div key={n.id} className="p-4 sm:p-6 hover:bg-slate-50/50 transition-colors space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
                 <span className={cn(
-                  "px-2.5 py-1 rounded-full text-xs font-bold uppercase",
+                  "px-2.5 py-1 rounded-full text-xs font-bold uppercase w-fit shrink-0",
                   n.type === 'both' ? 'bg-indigo-100 text-indigo-800' :
                   n.type === 'sms' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                 )}>
                   {n.type === 'both' ? '📧 Email & 📱 SMS' : n.type === 'sms' ? '📱 SMS Match Alert' : '📧 Email Match Alert'}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">{new Date(n.created_at).toLocaleString()}</span>
+                <span className="text-xs text-slate-400 font-medium shrink-0">{new Date(n.created_at).toLocaleString()}</span>
               </div>
-              <h3 className="font-bold text-slate-900 text-sm">Subject: {n.subject}</h3>
-              <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">{n.message}</p>
+              <h3 className="font-bold text-slate-900 text-sm pt-1 break-words leading-snug">Subject: {n.subject}</h3>
+              <p className="text-xs text-slate-600 bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100 font-mono whitespace-pre-wrap leading-relaxed shadow-inner overflow-x-auto break-words max-w-full">{n.message}</p>
             </div>
           ))}
           {notifications.length === 0 && (
@@ -2379,8 +2379,8 @@ const EmployerDashboard = () => {
           {/* Invoices */}
           <section>
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Placement Invoices</h2>
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left">
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm overflow-x-auto w-full">
+              <table className="w-full text-left min-w-[600px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Candidate</th>
@@ -2395,7 +2395,7 @@ const EmployerDashboard = () => {
                     <tr key={inv.id}>
                       <td className="px-6 py-4 font-medium text-slate-900">{inv.candidate_name}</td>
                       <td className="px-6 py-4 text-slate-600">{inv.job_title}</td>
-                      <td className="px-6 py-4 font-bold text-slate-900">${(inv.amount_cents / 100).toLocaleString()}</td>
+                      <td className="px-6 py-4 font-bold text-slate-900">${(inv.amount_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                       <td className="px-6 py-4">
                         <span className={cn("px-2 py-1 rounded text-xs font-bold uppercase", 
                           inv.status === 'paid' ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
@@ -2440,8 +2440,8 @@ const EmployerDashboard = () => {
               </span>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left">
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm overflow-x-auto w-full">
+              <table className="w-full text-left min-w-[700px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Referrer</th>
@@ -2573,19 +2573,19 @@ const EmployerDashboard = () => {
             </div>
             <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
               {notifications.map(n => (
-                <div key={n.id} className="p-6 hover:bg-slate-50/50 transition-colors space-y-3">
-                  <div className="flex justify-between items-center">
+                <div key={n.id} className="p-4 sm:p-6 hover:bg-slate-50/50 transition-colors space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
                     <span className={cn(
-                      "px-2.5 py-1 rounded-full text-xs font-bold uppercase",
+                      "px-2.5 py-1 rounded-full text-xs font-bold uppercase w-fit shrink-0",
                       n.type === 'both' ? 'bg-indigo-100 text-indigo-800' :
                       n.type === 'sms' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                     )}>
                       {n.type === 'both' ? '📧 Email & 📱 SMS' : n.type === 'sms' ? '📱 SMS Match Alert' : '📧 Email Match Alert'}
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">{new Date(n.created_at).toLocaleString()}</span>
+                    <span className="text-xs text-slate-400 font-medium shrink-0">{new Date(n.created_at).toLocaleString()}</span>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-sm">Subject: {n.subject}</h3>
-                  <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">{n.message}</p>
+                  <h3 className="font-bold text-slate-900 text-sm pt-1 break-words leading-snug">Subject: {n.subject}</h3>
+                  <p className="text-xs text-slate-600 bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100 font-mono whitespace-pre-wrap leading-relaxed shadow-inner overflow-x-auto break-words max-w-full">{n.message}</p>
                 </div>
               ))}
               {notifications.length === 0 && (
@@ -2618,9 +2618,9 @@ const EmployerDashboard = () => {
               <h2 className="text-2xl font-bold text-slate-900 mb-2">Confirm Hire</h2>
               <p className="text-slate-600 mb-6">Confirming the hire of <span className="font-bold text-slate-900">{hiringIntro.candidate_name}</span> for <span className="font-bold text-slate-900">{hiringIntro.job_title}</span>.</p>
               
-              <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 mb-6">
-                <p className="text-sm text-amber-800 font-medium">
-                  A flat placement fee of <span className="font-bold">$4,500</span> will be invoiced to your company upon confirmation.
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 mb-6 text-sm text-amber-900">
+                <p className="font-medium text-amber-900">
+                  A flat placement fee of <span className="font-bold text-amber-950">$4,500.00</span> (tax included) will be invoiced to your company upon confirmation.
                 </p>
               </div>
 
@@ -4442,9 +4442,13 @@ const PayPalPaymentModal = ({ invoice, onClose, onSuccess }: { invoice: any, onC
             <span className="text-slate-500 font-medium text-sm">Job Position</span>
             <span className="font-bold text-slate-800 text-sm">{invoice.job_title}</span>
           </div>
-          <div className="pt-3 flex justify-between">
-            <span className="text-slate-800 font-bold">Total Placement Fee</span>
-            <span className="font-extrabold text-emerald-600 text-lg">${(invoice.amount_cents / 100).toLocaleString()}</span>
+          <div className="py-3 flex justify-between">
+            <span className="text-slate-500 font-medium text-sm">Flat Placement Fee</span>
+            <span className="font-semibold text-slate-800 text-sm">$4,500.00</span>
+          </div>
+          <div className="pt-3 flex justify-between items-center">
+            <span className="text-slate-900 font-extrabold text-base">Total Amount Due</span>
+            <span className="font-extrabold text-emerald-600 text-xl">${((invoice.amount_cents || 450000) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
         </div>
 

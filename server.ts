@@ -99,7 +99,7 @@ const transporter = nodemailer.createTransport({
 const FROM_EMAIL = process.env.FROM_EMAIL || 'contact@ambershealthcare.com';
 
 // Helper to dispatch email/SMS notifications and save them to SQLite table
-function dispatchNotification(recipientEmail: string | null, recipientPhone: string | null, type: 'email' | 'sms' | 'both', subject: string | null, message: string) {
+function dispatchNotification(recipientEmail: string | null, recipientPhone: string | null, type: 'email' | 'sms' | 'both', subject: string | null, message: string, isAdminCopy = false) {
   const id = uuidv4();
   try {
     db.prepare(`
@@ -112,11 +112,30 @@ function dispatchNotification(recipientEmail: string | null, recipientPhone: str
     // Actually send email if required
     if ((type === 'email' || type === 'both') && recipientEmail) {
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+        const senderEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'contact@ambershealthcare.com';
+        const formattedHtml = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+            <div style="background-color: #020617; padding: 20px 24px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
+              <h2 style="color: #10b981; margin: 0; font-size: 22px; font-weight: 800; tracking: -0.5px;">Amber's Healthcare</h2>
+              <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 13px; font-weight: 500;">Baton Rouge Remote Healthcare Admin Placements</p>
+            </div>
+            <h3 style="color: #0f172a; margin-top: 0; font-size: 18px; font-weight: 700;">${subject || "Notification from Amber's Healthcare"}</h3>
+            <div style="color: #334155; line-height: 1.6; font-size: 14px; white-space: pre-wrap; background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9;">${message}</div>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;" />
+            <p style="color: #64748b; font-size: 12px; text-align: center; margin: 0;">
+              <strong>Amber's Healthcare Services</strong> • Baton Rouge, LA<br/>
+              Contact: <a href="mailto:contact@ambershealthcare.com" style="color: #0284c7; text-decoration: none;">contact@ambershealthcare.com</a> | Website: <a href="https://ambershealthcare.com" style="color: #0284c7; text-decoration: none;">ambershealthcare.com</a>
+            </p>
+          </div>
+        `;
+
         transporter.sendMail({
-          from: `"Amber's Healthcare" <${FROM_EMAIL}>`,
+          from: `"Amber's Healthcare" <${senderEmail}>`,
+          replyTo: "contact@ambershealthcare.com",
           to: recipientEmail,
           subject: subject || "Notification from Amber's Healthcare",
-          text: message
+          text: message,
+          html: formattedHtml
         }).then(info => {
           logDebug(`[EMAIL] Successfully sent to ${recipientEmail}: ${info.messageId}`);
         }).catch(err => {
@@ -124,6 +143,11 @@ function dispatchNotification(recipientEmail: string | null, recipientPhone: str
         });
       } else {
         logDebug(`[EMAIL] SMTP credentials not fully configured. Email was logged but not sent over SMTP.`);
+      }
+
+      // Also send a copy to ambersamanthayaghi@gmail.com if this is a user email and not already an admin copy
+      if (!isAdminCopy && recipientEmail !== 'ambersamanthayaghi@gmail.com') {
+        dispatchNotification('ambersamanthayaghi@gmail.com', recipientPhone, type, `[Admin Notification Copy] ${subject}`, message, true);
       }
     }
   } catch (err: any) {
@@ -1201,8 +1225,8 @@ async function startServer() {
       const invoiceId = uuidv4();
       
       db.prepare(`
-        INSERT INTO placement_invoices (id, employer_id, candidate_id, job_id, introduction_id, stripe_invoice_id, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'sent')
+        INSERT INTO placement_invoices (id, employer_id, candidate_id, job_id, introduction_id, amount_cents, stripe_invoice_id, status)
+        VALUES (?, ?, ?, ?, ?, 450000, ?, 'sent')
       `).run(invoiceId, intro.employer_id, intro.candidate_id, intro.job_id, introId, `paypal_draft_${invoiceId}`);
 
       res.json({ success: true, invoiceId });
