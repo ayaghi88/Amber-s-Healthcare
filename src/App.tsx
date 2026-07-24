@@ -37,7 +37,8 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
-  Lock
+  Lock,
+  ShieldAlert
 } from "lucide-react";
 import { cn } from "./lib/utils";
 import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
@@ -468,40 +469,63 @@ const Home = () => (
 
 const Pricing = () => (
   <div className="pt-32 pb-24">
-    <div className="max-w-3xl mx-auto px-4 text-center">
-      <h1 className="text-4xl font-extrabold text-slate-900 mb-6">Simple, Transparent Pricing</h1>
-      <p className="text-xl text-slate-600 mb-12">We believe in straightforward fees that align with your success.</p>
+    <div className="max-w-4xl mx-auto px-4 text-center">
+      <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full mb-4 uppercase tracking-wider">
+        Ember Core Studio LLC • Amber's Healthcare
+      </span>
+      <h1 className="text-4xl font-extrabold text-slate-900 mb-4">Flat-Fee Healthcare Matchmaking</h1>
+      <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto">
+        Transparent upfront checkout for non-clinical, remote administrative roles under a direct 1099 independent contractor framework.
+      </p>
       
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-        <div className="p-12">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Flat Placement Fee</h2>
+      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-12">
+        <div className="p-8 sm:p-12">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Employer Placement Fee</h2>
+          <p className="text-xs text-slate-500 mb-6">One-time flat fee per introduced candidate match</p>
+
           <div className="flex items-baseline justify-center gap-2 mb-8">
-            <span className="text-6xl font-extrabold text-emerald-600">$4,500</span>
-            <span className="text-slate-500 font-medium">per hire</span>
+            <span className="text-6xl font-extrabold text-emerald-600">$4,500.00</span>
+            <span className="text-slate-500 font-medium">upfront checkout</span>
           </div>
-          <ul className="text-left space-y-4 mb-10">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left mb-10">
             {[
-              "Pay only upon successful hire",
-              "12-month candidate introduction protection",
-              "Local Baton Rouge area candidates",
-              "Remote administrative specialists",
-              "Direct-hire placement (no staffing overhead)",
-              "Free for all candidates"
+              "Flat $4,500.00 upfront fee via PayPal",
+              "1099 Independent Contractor Architecture",
+              "Job seekers are 100% FREE (Statutory Guarantee)",
+              "Global remote talent pool access",
+              "Direct 1099 execution by employer",
+              "Zero post-hire work product liability",
+              "Deregulated Employer States (TX, CO, MO, IA, GA, ID, UT)",
+              "Automated $100 referral fee payout trigger"
             ].map(item => (
-              <li key={item} className="flex items-center gap-3 text-slate-700">
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                {item}
-              </li>
+              <div key={item} className="flex items-center gap-3 text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm">
+                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                <span className="font-medium">{item}</span>
+              </div>
             ))}
-          </ul>
-          <Link to="/register" className="block w-full py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 transition-all">
-            Get Started Today
-          </Link>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link to="/register" className="flex-1 py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 transition-all text-center">
+              Register &amp; Post Job
+            </Link>
+            <Link to="/underwriter" className="flex-1 py-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-lg transition-all text-center flex items-center justify-center gap-2">
+              <Sparkles className="w-5 h-5" /> AI Underwriter Tool
+            </Link>
+          </div>
         </div>
-        <div className="bg-slate-50 p-6 border-t border-slate-100">
-          <p className="text-sm text-slate-500">
-            Invoices are generated automatically upon hire confirmation and are due within 7 days.
-          </p>
+
+        <div className="bg-amber-50/80 border-b border-amber-200/60 p-4 text-amber-900 text-xs text-left flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <strong className="font-bold text-amber-900">Strict No-Refund Policy:</strong> Due to the immediate nature of recruitment introductions and candidate matchmaking, all employer placement fees ($4,500.00) are <strong>100% non-refundable</strong> once a candidate accepts the job offer / 1099 engagement. Amber's Healthcare (Ember Core Studio LLC) assumes zero post-hire liability for day-to-day candidate work product, performance, or ongoing retention.
+          </div>
+        </div>
+
+        <div className="bg-slate-50 p-6 border-t border-slate-100 text-left text-xs text-slate-500 space-y-2">
+          <p><strong>Regulatory Compliance Notice:</strong> Paying employers MUST be located in states that have completely deregulated permanent placement agency licensing (Texas, Colorado, Missouri, Iowa, Georgia, Idaho, Utah). Employers in Louisiana (LA) or non-deregulated states are blocked. Job seekers can be located anywhere globally.</p>
+          <p><strong>Contractual &amp; Refund Terms:</strong> Client agrees to contract candidates directly under a 1099 framework. Client assumes full management liability. Due to the service nature of candidate introductions, placement fees are strictly 100% non-refundable upon candidate job offer / 1099 contract acceptance.</p>
         </div>
       </div>
     </div>
@@ -786,6 +810,7 @@ export default function App() {
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/refer" element={<ReferProgram />} />
+              <Route path="/underwriter" element={<UnderwriterTool />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Routes>
           </main>
@@ -4525,6 +4550,7 @@ const EmployerAgreement = () => {
             <li><strong>Payment Terms:</strong> Invoices are due upon receipt. Company may suspend services for non-payment.</li>
             <li><strong>Non-Circumvention:</strong> Employer agrees not to bypass Company to avoid placement fees by engaging introduced candidates directly or indirectly.</li>
             <li><strong>No Employment Relationship:</strong> Nothing in this Agreement creates an employment, joint employment, partnership, or agency relationship between Company and any candidate.</li>
+            <li><strong>Strict No Refund Policy:</strong> Due to the immediate nature of recruitment introductions and candidate matchmaking, once Employer completes payment or an introduced candidate accepts the job offer / 1099 contractor engagement, the <strong>$4,500.00 placement fee is strictly 100% non-refundable</strong>. Amber’s Healthcare (Ember Core Studio LLC) assumes zero liability post-hire for candidate work product, day-to-day performance, attendance, or job retention.</li>
             <li><strong>$100 Referral Fee Program:</strong> Anyone may submit a referral for a potential candidate. If that referred candidate is actively hired by the Employer, the referrer receives a <strong>$100</strong> referral fee. This referral fee is paid only after the referred employee successfully completes <strong>two (2) full pay periods</strong>. Employer agrees to update the candidate's active employment status in their employer portal to ensure accurate and timely payout to the referrer. Referrers are not required to be registered employees or employers, and there is no limit to the number of referral fees a single referrer may earn.</li>
             <li><strong>Compliance:</strong> Employer agrees to comply with all applicable federal, state, and local employment and anti-discrimination laws.</li>
             <li><strong>Limitation of Liability:</strong> Company makes no guarantee regarding candidate performance or retention.</li>
@@ -4638,7 +4664,15 @@ const TermsOfService = () => {
             <li><strong>Full Terms:</strong> Employers must also review and agree to our <Link to="/agreement" className="text-emerald-600 font-semibold underline">Employer Service Agreement</Link>.</li>
           </ul>
 
-          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">3. Candidate Rights & Responsibilities</h2>
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">3. Strict No-Refund Policy & Exemption of Liability</h2>
+          <p>
+            Due to the immediate service nature of recruitment introductions and matchmaking, all employer placement fees ($4,500.00) are <strong>strictly 100% non-refundable</strong> once an introduced candidate accepts a job offer or 1099 independent contractor agreement.
+          </p>
+          <p>
+            <strong>Post-Hire Exemption of Liability:</strong> Amber's Healthcare (operating under Ember Core Studio LLC) operates solely as a matchmaking and recruitment intermediary. Once a worker accepts an engagement, the employer assumes full management liability for supervision, work performance, and quality. Amber's Healthcare assumes zero post-hire liability for day-to-day candidate work product, worker retention, or employment disputes.
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">4. Candidate Rights & Responsibilities</h2>
           <ul className="list-disc pl-5 space-y-2">
             <li><strong>No Placement Fees:</strong> Candidates are never charged any fees for registration, resume matching, or job placement.</li>
             <li><strong>Geographic Eligibility:</strong> Candidates must reside within our supported Louisiana parishes (East Baton Rouge, West Baton Rouge, Ascension, Livingston, Iberville, East Feliciana, West Feliciana, Pointe Coupee, St. Helena).</li>
@@ -4744,6 +4778,11 @@ const FAQ = () => {
       category: "employers",
       question: "How much does Amber’s Healthcare cost for employers?",
       answer: "We charge a simple, transparent flat fee of $4,500.00 per successful candidate placement. There are no upfront fees, listing fees, or monthly subscriptions. You only pay when you decide to hire a candidate we introduce."
+    },
+    {
+      category: "employers",
+      question: "What is your refund policy for employer placement fees?",
+      answer: "Due to the nature of recruitment introductions and matchmaking, all employer placement fees ($4,500.00) are strictly 100% non-refundable once an introduced candidate accepts the job offer or 1099 independent contractor agreement. Amber's Healthcare (operating under Ember Core Studio LLC) operates solely as a matchmaking intermediary and assumes zero liability for day-to-day candidate work performance, attendance, or post-hire retention."
     },
     {
       category: "employers",
@@ -4901,6 +4940,174 @@ const FAQ = () => {
         >
           <Mail className="w-4 h-4" /> Contact Us Directly
         </a>
+      </div>
+    </div>
+  );
+};
+
+const UnderwriterTool = () => {
+  const [requestType, setRequestType] = useState<'EMPLOYER' | 'CANDIDATE'>('EMPLOYER');
+  const [facilityName, setFacilityName] = useState("Austin Medical Group");
+  const [stateLocation, setStateLocation] = useState("Texas");
+  const [candidateName, setCandidateName] = useState("Jane Doe");
+  const [candidateLocation, setCandidateLocation] = useState("Baton Rouge, LA (Global Remote)");
+  const [jsonOutput, setJsonOutput] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const runUnderwriting = async () => {
+    setLoading(true);
+    try {
+      const payload = requestType === 'EMPLOYER' ? {
+        request_type: "EMPLOYER",
+        facility_name: facilityName,
+        state_location: stateLocation
+      } : {
+        request_type: "CANDIDATE",
+        candidate_name: candidateName,
+        current_location: candidateLocation
+      };
+
+      const res = await fetch("/api/underwrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      setJsonOutput(data);
+    } catch (err: any) {
+      setJsonOutput({ error: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    runUnderwriting();
+  }, [requestType, facilityName, stateLocation, candidateName, candidateLocation]);
+
+  return (
+    <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
+      <div className="text-center mb-10">
+        <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full mb-3 uppercase tracking-wider">
+          ⚖️ Matchmaker AI Underwriter Simulation
+        </span>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">
+          Amber's Healthcare Underwriter Engine
+        </h1>
+        <p className="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">
+          Underwrites employer state jurisdiction eligibility (Texas, Colorado, Missouri, Iowa, Georgia, Idaho, Utah allowed; Louisiana &amp; regulated states blocked) and formats candidate matchmaking records.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        {/* Input Form */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+          <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Input Payload Configuration</h2>
+          
+          <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+            <button
+              onClick={() => setRequestType('EMPLOYER')}
+              className={cn("flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer", requestType === 'EMPLOYER' ? "bg-white text-indigo-700 shadow-sm" : "text-slate-600")}
+            >
+              EMPLOYER Request
+            </button>
+            <button
+              onClick={() => setRequestType('CANDIDATE')}
+              className={cn("flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer", requestType === 'CANDIDATE' ? "bg-white text-indigo-700 shadow-sm" : "text-slate-600")}
+            >
+              CANDIDATE Submission
+            </button>
+          </div>
+
+          {requestType === 'EMPLOYER' ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Facility Name</label>
+                <input
+                  type="text"
+                  value={facilityName}
+                  onChange={e => setFacilityName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">State Location</label>
+                <select
+                  value={stateLocation}
+                  onChange={e => setStateLocation(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500"
+                >
+                  <option value="Texas">Texas (Allowed - TX)</option>
+                  <option value="Colorado">Colorado (Allowed - CO)</option>
+                  <option value="Missouri">Missouri (Allowed - MO)</option>
+                  <option value="Iowa">Iowa (Allowed - IA)</option>
+                  <option value="Georgia">Georgia (Allowed - GA)</option>
+                  <option value="Idaho">Idaho (Allowed - ID)</option>
+                  <option value="Utah">Utah (Allowed - UT)</option>
+                  <option value="Louisiana">Louisiana (Blocked - LA)</option>
+                  <option value="California">California (Blocked - CA)</option>
+                  <option value="New York">New York (Blocked - NY)</option>
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Allowed: TX, CO, MO, IA, GA, ID, UT. Blocked: LA &amp; regulated states.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Candidate Name</label>
+                <input
+                  type="text"
+                  value={candidateName}
+                  onChange={e => setCandidateName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Current Location (Global)</label>
+                <input
+                  type="text"
+                  value={candidateLocation}
+                  onChange={e => setCandidateLocation(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Candidates can be located anywhere globally for remote admin roles.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={runUnderwriting}
+            disabled={loading}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            Execute Underwrite Payload
+          </button>
+        </div>
+
+        {/* Output Box */}
+        <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 text-slate-100 font-mono text-xs flex flex-col justify-between shadow-lg min-h-[380px]">
+          <div>
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
+              <span className="text-slate-400 font-sans text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-emerald-400" /> Strict Raw JSON Output
+              </span>
+              <span className={cn("px-2.5 py-1 rounded text-[10px] font-bold uppercase", jsonOutput?.eligible ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30")}>
+                {jsonOutput?.eligible ? "ELIGIBLE = TRUE" : "ELIGIBLE = FALSE"}
+              </span>
+            </div>
+            <pre className="overflow-x-auto whitespace-pre-wrap text-emerald-400 p-4 bg-slate-950 rounded-xl border border-slate-800/80 leading-relaxed font-mono">
+              {JSON.stringify(jsonOutput, null, 2)}
+            </pre>
+          </div>
+          <div className="pt-4 border-t border-slate-800 mt-4 text-[11px] text-slate-400 font-sans">
+            Amber's Healthcare (operating under Ember Core Studio LLC) | Flat $4,500.00 upfront fee | 1099 Contractor framework
+          </div>
+        </div>
       </div>
     </div>
   );

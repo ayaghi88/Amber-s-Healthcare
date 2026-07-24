@@ -41,6 +41,13 @@
       "password": "$2b$10$oGCkeSgyFkTgmqXosd/PlOOdSeI2LA8qPCYnDTN1d0F44J8VrOMRy",
       "role": "candidate",
       "created_at": "2026-07-10 09:04:51"
+    },
+    {
+      "id": "aed11ffa-7260-423c-88e8-00c222c3cf49",
+      "email": "contact@kaleidoscopicacademy.com",
+      "password": "$2b$10$hc2ZKVACxLyYmibufLR/POnzSsGlDJllHHVwMb6DcN6okEcWAWpIy",
+      "role": "candidate",
+      "created_at": "2026-07-24 05:46:32"
     }
   ],
   "candidates": [
@@ -69,6 +76,20 @@
       "resume_url": null,
       "status": "active",
       "accepted_terms_at": "2026-07-09 19:15:30",
+      "contact_preference": "Email",
+      "interview_preference": "Virtual Video Call"
+    },
+    {
+      "id": "504ba68b-16cd-49d2-9a5a-b012a0712c43",
+      "user_id": "aed11ffa-7260-423c-88e8-00c222c3cf49",
+      "full_name": "Hrrhttt",
+      "phone": "3332222222",
+      "parish": "East Baton Rouge",
+      "role_specialties": "[\"Patient Intake Coordinator\"]",
+      "experience_summary": "Been self employed forever",
+      "resume_url": null,
+      "status": "active",
+      "accepted_terms_at": "2026-07-24 05:46:38",
       "contact_preference": "Email",
       "interview_preference": "Virtual Video Call"
     }
@@ -150,6 +171,14 @@
       "introduced_at": "2026-07-10 03:46:49",
       "note": "I have a decade of healthcare experience",
       "status": "confirmed_match"
+    },
+    {
+      "id": "40748802-9d2f-4c93-a96b-596e38a4fce3",
+      "job_id": "d32416ab-6f40-4874-a2c1-6ded2425cd7c",
+      "candidate_id": "504ba68b-16cd-49d2-9a5a-b012a0712c43",
+      "introduced_at": "2026-07-24 05:51:53",
+      "note": "I honestly just need a job. I don’t have the exact experience; However, I’ve unofficially fulfilled the role & it’s duties for as long as I can remember.",
+      "status": "potential_match"
     }
   ],
   "hire_confirmations": [],
@@ -274,6 +303,46 @@
       "message": "Admin Alert:\nA new referral has been submitted:\n- Referrer: Amber Referrer 2 (referrer@example.com)\n- Candidate: Test Candidate 2 (candidate@example.com)",
       "status": "sent",
       "created_at": "2026-07-10 09:20:32"
+    },
+    {
+      "id": "82ff06df-c850-463a-a700-6b0675b2e12d",
+      "recipient_email": "amber@ambershealthcare.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "Potential Match Alert: Hrrhttt applied to Marketing Associate",
+      "message": "Admin Alert:\nCandidate **Hrrhttt** has expressed interest in job posting **Marketing Associate** at **Amber's Healthcare Services**.\n\nThis is a potential match. Please log into the Admin Dashboard under 'Potential Matches' to review and confirm or decline this match.\n\nCover Note: \"I honestly just need a job. I don’t have the exact experience; However, I’ve unofficially fulfilled the role & it’s duties for as long as I can remember.\"",
+      "status": "sent",
+      "created_at": "2026-07-24 05:51:53"
+    },
+    {
+      "id": "18ba9e3e-d7ea-4d70-bcb0-8635fd3d5dfe",
+      "recipient_email": "ambersamanthayaghi@gmail.com",
+      "recipient_phone": null,
+      "type": "email",
+      "subject": "[Admin Notification Copy] Potential Match Alert: Hrrhttt applied to Marketing Associate",
+      "message": "Admin Alert:\nCandidate **Hrrhttt** has expressed interest in job posting **Marketing Associate** at **Amber's Healthcare Services**.\n\nThis is a potential match. Please log into the Admin Dashboard under 'Potential Matches' to review and confirm or decline this match.\n\nCover Note: \"I honestly just need a job. I don’t have the exact experience; However, I’ve unofficially fulfilled the role & it’s duties for as long as I can remember.\"",
+      "status": "sent",
+      "created_at": "2026-07-24 05:51:53"
+    },
+    {
+      "id": "4d300f03-3213-4de3-9c7d-7193dac905ad",
+      "recipient_email": "contact@kaleidoscopicacademy.com",
+      "recipient_phone": "3332222222",
+      "type": "email",
+      "subject": "Application Received: Marketing Associate at Amber's Healthcare Services",
+      "message": "Hi Hrrhttt,\n\nYou have successfully expressed interest in the position of **Marketing Associate** at **Amber's Healthcare Services**.\n\nOur placement team is currently reviewing your profile to confirm this match with the employer. We will send you a confirmation email once the match is officially confirmed!\n\nThank you,\nAmber's Healthcare Team",
+      "status": "sent",
+      "created_at": "2026-07-24 05:51:53"
+    },
+    {
+      "id": "ff870bc4-131d-434c-a505-c665afcd5b22",
+      "recipient_email": "ambersamanthayaghi@gmail.com",
+      "recipient_phone": "3332222222",
+      "type": "email",
+      "subject": "[Admin Notification Copy] Application Received: Marketing Associate at Amber's Healthcare Services",
+      "message": "Hi Hrrhttt,\n\nYou have successfully expressed interest in the position of **Marketing Associate** at **Amber's Healthcare Services**.\n\nOur placement team is currently reviewing your profile to confirm this match with the employer. We will send you a confirmation email once the match is officially confirmed!\n\nThank you,\nAmber's Healthcare Team",
+      "status": "sent",
+      "created_at": "2026-07-24 05:51:53"
     }
   ]
 }

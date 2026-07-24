@@ -1128,16 +1128,108 @@ async function startServer() {
       return res.status(400).json({ error: "Invalid referral status." });
     }
     try {
+      const referral = db.prepare("SELECT * FROM referrals WHERE id = ?").get(req.params.id) as any;
+      if (!referral) {
+        return res.status(404).json({ error: "Referral not found." });
+      }
+
       db.prepare(`
         UPDATE referrals
         SET status = ?, employer_notes = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).run(status, employer_notes || "", req.params.id);
-      res.json({ success: true });
+
+      // Automated payout trigger if status changed to paid_completed
+      if (status === 'paid_completed') {
+        try {
+          const referrerSubject = `$100 Referral Reward Paid! - ${referral.candidate_name}`;
+          const referrerMsg = `Hi ${referral.referrer_name},\n\nGreat news! Your referred candidate **${referral.candidate_name}** has successfully completed two (2) full pay periods with their employer.\n\nYour **$100.00 USD Referral Reward** has been confirmed and paid by Amber's Healthcare (Ember Core Studio LLC).\n\nThank you for helping us connect outstanding healthcare talent with top medical organizations!\n\nBest regards,\nAmber's Healthcare Team (Ember Core Studio LLC)`;
+          dispatchNotification(referral.referrer_email, null, 'email', referrerSubject, referrerMsg);
+
+          const candSubject = `Referral Milestone Reached! - Amber's Healthcare`;
+          const candMsg = `Hi ${referral.candidate_name},\n\nCongratulations! Your employer has confirmed that you have completed two (2) full pay periods. Your referrer **${referral.referrer_name}** has been issued their $100 referral reward.\n\nThank you for being a valued healthcare administrative professional on our platform!\n\nBest regards,\nAmber's Healthcare Team (Ember Core Studio LLC)`;
+          dispatchNotification(referral.candidate_email, null, 'email', candSubject, candMsg);
+
+          const adminUsers = db.prepare("SELECT email FROM users WHERE role = 'admin'").all() as any[];
+          for (const admin of adminUsers) {
+            const adminSubject = `[Payout Confirmed] $100 Referral Fee Issued to ${referral.referrer_name}`;
+            const adminMsg = `Admin Alert:\nReferral reward of $100.00 USD has been automated and confirmed for:\n- Referrer: ${referral.referrer_name} (${referral.referrer_email})\n- Candidate: ${referral.candidate_name} (${referral.candidate_email})\n- Status: 2 Full Pay Periods Completed & Paid`;
+            dispatchNotification(admin.email, null, 'email', adminSubject, adminMsg);
+          }
+        } catch (notifyErr: any) {
+          logDebug(`Error triggering automated referral payout notifications: ${notifyErr.message}`);
+        }
+      }
+
+      backupDatabase();
+      res.json({ success: true, message: status === 'paid_completed' ? "Referral payout of $100 confirmed and automated notifications sent!" : "Status updated successfully." });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
   });
+
+  // --- B2C/B2B Healthcare Matchmaker AI Underwriter Endpoint ---
+  app.post("/api/underwrite", (req, res) => {
+    try {
+      const payload = req.body || {};
+      const reqType = (payload.request_type || (payload.candidate_name ? "CANDIDATE" : "EMPLOYER")).toString().toUpperCase();
+
+      if (reqType === "CANDIDATE") {
+        const candidateName = payload.candidate_name || payload.full_name || "Job Seeker";
+        const currentLocation = payload.current_location || payload.location || payload.parish || "Global / Remote";
+        
+        return res.json({
+          request_type: "CANDIDATE",
+          candidate_name: candidateName,
+          current_location: currentLocation,
+          eligible: true,
+          next_action: "ADD_TO_REMOTE_TALENT_POOL"
+        });
+      }
+
+      // EMPLOYER UNDERWRITING
+      const facilityName = payload.facility_name || payload.company_name || payload.organization_name || "Healthcare Facility";
+      const rawState = (payload.state_location || payload.state || payload.parish || "").toString().trim();
+      
+      const allowedStates = [
+        "TEXAS", "TX",
+        "COLORADO", "CO",
+        "MISSOURI", "MO",
+        "IOWA", "IA",
+        "GEORGIA", "GA",
+        "IDAHO", "ID",
+        "UTAH", "UT"
+      ];
+
+      const cleanStateUpper = rawState.toUpperCase();
+      const isEligibleState = allowedStates.some(st => cleanStateUpper === st || cleanStateUpper.includes(st));
+
+      // Louisiana or non-deregulated state check
+      if (!isEligibleState || cleanStateUpper.includes("LOUISIANA") || cleanStateUpper === "LA") {
+        return res.json({
+          request_type: "EMPLOYER",
+          facility_name: facilityName,
+          state_location: rawState || "LOUISIANA (LA) / Non-Deregulated State",
+          eligible: false,
+          next_action: "SHOW_REGULATORY_BLOCK_MESSAGE",
+          contract_terms_snippet: "By completing the $4,500.00 checkout, Client agrees to contract the candidate directly under a 1099 framework. Client assumes full management liability. All fees are strictly 100% non-refundable once candidate accepts placement. Amber's Healthcare is an employer-fee-paid service; candidates are never billed."
+        });
+      }
+
+      return res.json({
+        request_type: "EMPLOYER",
+        facility_name: facilityName,
+        state_location: rawState,
+        eligible: true,
+        next_action: "REDIRECT_TO_PAYPAL_BUTTON",
+        contract_terms_snippet: "By completing the $4,500.00 checkout, Client agrees to contract the candidate directly under a 1099 framework. Client assumes full management liability. All fees are strictly 100% non-refundable once candidate accepts placement. Amber's Healthcare is an employer-fee-paid service; candidates are never billed."
+      });
+
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
 
   // --- Admin Routes ---
   app.post("/api/introductions", authenticate, (req: any, res) => {
