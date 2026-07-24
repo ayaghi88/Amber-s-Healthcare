@@ -140,21 +140,21 @@ const Navbar = () => {
             <span className="text-xl font-bold text-slate-900 tracking-tight">Amber’s Healthcare</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-4 lg:gap-6 text-sm">
             <Link to="/jobs" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Find Jobs</Link>
             <Link to="/pricing" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pricing</Link>
             <Link to="/faq" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">FAQ</Link>
             <Link to="/contact" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Contact Us</Link>
-            <Link to="/refer" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors flex items-center gap-1.5">
-              <Gift className="w-4 h-4 text-emerald-600" /> Refer & Earn $100
+            <Link to="/refer" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors flex items-center gap-1">
+              <Gift className="w-4 h-4 text-emerald-600" /> Refer &amp; Earn $100
             </Link>
             {loading ? (
               <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
             ) : user ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
                 <Link 
                   to={user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/candidate'} 
-                  className="text-slate-600 hover:text-emerald-600 font-medium transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 font-semibold hover:bg-emerald-100 transition-colors"
                 >
                   Dashboard
                 </Link>
@@ -162,20 +162,21 @@ const Navbar = () => {
                   to="/settings" 
                   className="text-slate-600 hover:text-emerald-600 font-medium transition-colors"
                 >
-                  Account Settings
+                  Settings
                 </Link>
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all font-medium"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 border border-red-200/80 transition-all font-bold text-xs cursor-pointer shadow-xs"
+                  title="Sign out of account"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5 text-red-600" />
                   Logout
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <Link to="/login" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Login</Link>
-                <Link to="/register" className="px-6 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 transition-all font-medium shadow-sm shadow-emerald-200">
+                <Link to="/register" className="px-5 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 transition-all font-medium shadow-sm shadow-emerald-200">
                   Get Started
                 </Link>
               </div>
@@ -473,67 +474,157 @@ const Home = () => (
   </div>
 );
 
-const Pricing = () => (
-  <div className="pt-32 pb-24">
-    <div className="max-w-4xl mx-auto px-4 text-center">
-      <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full mb-4 uppercase tracking-wider">
-        Amber's Healthcare Direct-Hire Matchmaking
-      </span>
-      <h1 className="text-4xl font-extrabold text-slate-900 mb-4">Flat-Fee Healthcare Matchmaking</h1>
-      <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto">
-        Transparent upfront checkout for non-clinical, remote administrative roles under a direct 1099 independent contractor framework.
-      </p>
-      
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-12">
-        <div className="p-8 sm:p-12">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Employer Placement Fee</h2>
-          <p className="text-xs text-slate-500 mb-6">One-time flat fee per introduced candidate match</p>
+const Pricing = () => {
+  const { user } = useAuth();
 
-          <div className="flex items-baseline justify-center gap-2 mb-8">
-            <span className="text-6xl font-extrabold text-emerald-600">$4,500.00</span>
-            <span className="text-slate-500 font-medium">upfront checkout</span>
+  return (
+    <div className="pt-32 pb-24 max-w-6xl mx-auto px-4">
+      <div className="text-center mb-12">
+        <span className="inline-block px-3.5 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full mb-3 uppercase tracking-wider border border-emerald-200/60">
+          Amber's Healthcare Transparent Pricing
+        </span>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">Clear, Fair Healthcare Matchmaking</h1>
+        <p className="text-slate-600 max-w-2xl mx-auto text-base">
+          100% Free for job seekers and candidates. Flat upfront pricing for healthcare employers under a direct 1099 contractor framework.
+        </p>
+      </div>
+
+      {/* Two Card Layout: Candidate $0.00 vs Employer $4,500 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        {/* Candidate Card: $0.00 FREE */}
+        <div className="bg-white rounded-3xl shadow-xl border-2 border-emerald-500 overflow-hidden flex flex-col justify-between relative">
+          <div className="bg-emerald-600 text-white text-xs font-extrabold py-1.5 px-4 text-center uppercase tracking-wider">
+            ★ Statutory Guarantee: Always 100% FREE For Job Seekers
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left mb-10">
-            {[
-              "Flat $4,500.00 upfront fee via PayPal",
-              "1099 Independent Contractor Architecture",
-              "Job seekers are 100% FREE (Statutory Guarantee)",
-              "Global remote talent pool access",
-              "Direct 1099 execution by employer",
-              "Zero post-hire work product liability",
-              "Deregulated Employer States (TX, CO, MO, IA, GA, ID, UT)",
-              "Automated $100 referral fee payout trigger"
-            ].map(item => (
-              <div key={item} className="flex items-center gap-3 text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm">
-                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                <span className="font-medium">{item}</span>
+          <div className="p-8 sm:p-10 flex-grow flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Job Seekers &amp; Candidates</h2>
+                  <p className="text-xs text-slate-500 mt-1">Remote non-clinical administrative talent</p>
+                </div>
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase">
+                  FREE
+                </span>
               </div>
-            ))}
-          </div>
 
-          <div className="flex justify-center">
-            <Link to="/register" className="w-full sm:w-2/3 py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 transition-all text-center shadow-lg shadow-emerald-200">
-              Register &amp; Post Job
-            </Link>
+              <div className="flex items-baseline gap-2 mb-6">
+                <span className="text-5xl font-extrabold text-emerald-600">$0.00</span>
+                <span className="text-slate-500 font-medium text-sm">forever (100% free)</span>
+              </div>
+
+              <p className="text-xs text-slate-600 mb-6 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100/80 leading-relaxed">
+                Candidates are <strong>never charged any fees</strong> to build a profile, search jobs, apply, or accept placements. All operational costs are 100% employer-funded.
+              </p>
+
+              <div className="space-y-3 mb-8">
+                {[
+                  "100% FREE candidate registration & matching",
+                  "Direct introduction to hiring practice managers",
+                  "Zero placement deductions from candidate pay",
+                  "Zero hidden subscription or agency fees",
+                  "Direct 1099 independent contractor arrangements",
+                  "Global remote administrative talent pool",
+                  "Dedicated support & application status tracking"
+                ].map(item => (
+                  <div key={item} className="flex items-start gap-2.5 text-slate-700 text-sm">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              {user?.role === 'candidate' ? (
+                <Link to="/jobs" className="block w-full py-3.5 rounded-2xl bg-emerald-600 text-white font-bold text-center hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200">
+                  Browse Open Admin Jobs ($0.00) &rarr;
+                </Link>
+              ) : (
+                <Link to="/register" className="block w-full py-3.5 rounded-2xl bg-emerald-600 text-white font-bold text-center hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200">
+                  Register as Candidate (100% Free)
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="bg-amber-50/80 border-b border-amber-200/60 p-4 text-amber-900 text-xs text-left flex items-start gap-3">
+        {/* Employer Card: $4,500.00 Flat Fee */}
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-100 text-slate-700 text-xs font-extrabold py-1.5 px-4 text-center uppercase tracking-wider border-b border-slate-200">
+            Healthcare Organizations &amp; Medical Practices
+          </div>
+          <div className="p-8 sm:p-10 flex-grow flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Employer Placement Fee</h2>
+                  <p className="text-xs text-slate-500 mt-1">Flat fee per introduced candidate match</p>
+                </div>
+                <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full uppercase">
+                  FLAT FEE
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2 mb-6">
+                <span className="text-5xl font-extrabold text-slate-900">$4,500.00</span>
+                <span className="text-slate-500 font-medium text-sm">upfront checkout</span>
+              </div>
+
+              <p className="text-xs text-slate-600 mb-6 bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
+                One-time flat fee per placed candidate. No ongoing commissions, markups, or hourly percentage cut.
+              </p>
+
+              <div className="space-y-3 mb-8">
+                {[
+                  "Flat $4,500.00 upfront placement fee via PayPal",
+                  "Direct 1099 Independent Contractor Architecture",
+                  "Vetted remote medical billing & administrative staff",
+                  "Access to global remote talent pool",
+                  "Deregulated Employer States (TX, CO, MO, IA, GA, ID, UT)",
+                  "Automated $100 referral fee payout trigger",
+                  "Zero post-hire work product liability"
+                ].map(item => (
+                  <div key={item} className="flex items-start gap-2.5 text-slate-700 text-sm">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              {user?.role === 'employer' ? (
+                <Link to="/employer" className="block w-full py-3.5 rounded-2xl bg-slate-900 text-white font-bold text-center hover:bg-slate-800 transition-all shadow-md">
+                  Employer Dashboard / Post Job
+                </Link>
+              ) : (
+                <Link to="/register" className="block w-full py-3.5 rounded-2xl bg-slate-900 text-white font-bold text-center hover:bg-slate-800 transition-all shadow-md">
+                  Employer Registration &amp; Post Job
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Refund Policy & Compliance Footer */}
+      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-amber-50/80 p-5 text-amber-900 text-xs text-left flex items-start gap-3 border-b border-amber-200/60">
           <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <strong className="font-bold text-amber-900">Strict No-Refund Policy:</strong> Due to the immediate nature of recruitment introductions and candidate matchmaking, all employer placement fees ($4,500.00) are <strong>100% non-refundable</strong> once a candidate accepts the job offer / 1099 engagement. Amber's Healthcare assumes zero post-hire liability for day-to-day candidate work product, performance, or ongoing retention.
+            <strong className="font-bold text-amber-900">Strict No-Refund Policy:</strong> Due to the immediate service nature of candidate introductions and matchmaking, all employer placement fees ($4,500.00) are <strong>100% non-refundable</strong> once a candidate accepts the job offer / 1099 contractor placement. Amber's Healthcare assumes zero post-hire liability for day-to-day candidate work product or retention.
           </div>
         </div>
 
-        <div className="bg-slate-50 p-6 border-t border-slate-100 text-left text-xs text-slate-500 space-y-2">
+        <div className="bg-slate-50 p-6 text-left text-xs text-slate-500 space-y-2">
           <p><strong>Regulatory Compliance Notice:</strong> Paying employers MUST be located in states that have completely deregulated permanent placement agency licensing (Texas, Colorado, Missouri, Iowa, Georgia, Idaho, Utah). Employers in Louisiana (LA) or non-deregulated states are blocked. Job seekers can be located anywhere globally.</p>
-          <p><strong>Contractual &amp; Refund Terms:</strong> Client agrees to contract candidates directly under a 1099 framework. Client assumes full management liability. Due to the service nature of candidate introductions, placement fees are strictly 100% non-refundable upon candidate job offer / 1099 contract acceptance.</p>
+          <p><strong>Job Seeker Guarantee:</strong> Candidates are never charged any fees to register or be placed with healthcare employers under any circumstance.</p>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ReferProgram = () => {
   const [referrerName, setReferrerName] = useState("");
@@ -876,7 +967,8 @@ export default function App() {
 }
 
 const AccountSettings = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -946,9 +1038,23 @@ const AccountSettings = () => {
   return (
     <div className="pt-32 pb-24 max-w-xl mx-auto px-4">
       <div className="bg-white rounded-[32px] shadow-xl border border-slate-200 overflow-hidden">
-        <div className="p-8 bg-slate-900 text-white">
-          <h1 className="text-2xl font-extrabold tracking-tight">Account Settings</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage your registered email and secure password updates.</p>
+        <div className="p-8 bg-slate-900 text-white flex justify-between items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight">Account Settings</h1>
+            <p className="text-slate-400 text-sm mt-1">Manage your registered email and secure password updates.</p>
+          </div>
+          <button 
+            type="button"
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              logout();
+              navigate("/");
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+          >
+            <LogOut className="w-3.5 h-3.5 text-red-400" />
+            Logout
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -1407,7 +1513,8 @@ const Register = () => {
 // --- Dashboards & Functional Pages ---
 
 const CandidateDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [candidate, setCandidate] = useState<any>(null);
   const [profile, setProfile] = useState({
     full_name: "",
@@ -1514,25 +1621,59 @@ const CandidateDashboard = () => {
 
   return (
     <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
+      {/* Candidate $0.00 Free Guarantee Banner */}
+      <div className="mb-6 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-2.5 bg-emerald-600 text-white rounded-xl shrink-0 shadow-xs">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base">Candidate Price: 100% FREE ($0.00)</h3>
+              <span className="px-2.5 py-0.5 bg-emerald-600 text-white text-[11px] font-extrabold rounded-full uppercase tracking-wider">Statutory Guarantee</span>
+            </div>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Job seekers &amp; candidates are <strong>never charged any fees</strong> to create a profile, apply for jobs, or accept direct-hire placements. All placement costs are 100% covered by healthcare employers.
+            </p>
+          </div>
+        </div>
+        <Link to="/pricing" className="text-xs font-bold text-emerald-700 hover:text-emerald-900 underline whitespace-nowrap shrink-0">
+          View Platform Pricing &rarr;
+        </Link>
+      </div>
+
       <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
         <div className="p-8 bg-emerald-600 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">Candidate Profile</h1>
-            <p className="opacity-90">
+            <p className="opacity-90 text-sm mt-1">
               {isProfileComplete 
-                ? "Your profile is active, complete, and matching with local employers!" 
-                : "Complete your profile to be matched with local healthcare employers."}
+                ? "Your profile is active, complete, and matching with healthcare employers!" 
+                : "Complete your profile to be matched with remote administrative healthcare opportunities."}
             </p>
           </div>
-          {candidate?.accepted_terms_at ? (
-            <span className="px-4 py-1.5 bg-emerald-700/50 border border-emerald-400 text-white rounded-full text-xs font-semibold">
-              ✓ Terms Accepted
-            </span>
-          ) : (
-            <span className="px-4 py-1.5 bg-amber-500 text-white rounded-full text-xs font-semibold">
-              ⚠️ Terms Pending
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {candidate?.accepted_terms_at ? (
+              <span className="px-3.5 py-1.5 bg-emerald-700/60 border border-emerald-400 text-white rounded-full text-xs font-semibold">
+                ✓ Terms Accepted
+              </span>
+            ) : (
+              <span className="px-3.5 py-1.5 bg-amber-500 text-white rounded-full text-xs font-semibold">
+                ⚠️ Terms Pending
+              </span>
+            )}
+            <button 
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                logout();
+                navigate("/");
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Logout
+            </button>
+          </div>
         </div>
 
         {!candidate?.accepted_terms_at && (
@@ -1807,7 +1948,8 @@ const CandidateDashboard = () => {
 };
 
 const EmployerDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({
     company_name: "",
     contact_name: "",
@@ -2015,6 +2157,33 @@ const EmployerDashboard = () => {
 
   return (
     <div className="pt-32 pb-24 max-w-7xl mx-auto px-4">
+      {/* Employer Header Banner */}
+      <div className="mb-8 p-6 bg-slate-900 text-white rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg border border-slate-800">
+        <div>
+          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Healthcare Employer Portal</span>
+          <h1 className="text-2xl font-bold mt-1">
+            {employer?.company_name && employer.company_name !== "Pending Setup" ? employer.company_name : "Employer Dashboard"}
+          </h1>
+          <p className="text-xs text-slate-300 mt-1">Direct-hire 1099 matchmaking &amp; candidate introductions</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link to="/settings" className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition-all">
+            Account Settings
+          </Link>
+          <button 
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              logout();
+              navigate("/");
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5 text-red-400" />
+            Logout
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Profile Sidebar */}
         <div className="lg:col-span-1 space-y-8">
@@ -4989,12 +5158,20 @@ const FAQ = () => {
       <div className="mt-12 text-center bg-emerald-50 rounded-3xl p-8 border border-emerald-100">
         <h3 className="text-xl font-bold text-slate-900 mb-2">Still have questions?</h3>
         <p className="text-slate-600 mb-6 text-sm sm:text-base">Our placement advisors at Amber's Healthcare are here to assist you.</p>
-        <a 
-          href="mailto:contact@ambershealthcare.com"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200"
-        >
-          <Mail className="w-4 h-4" /> Contact Us Directly
-        </a>
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+          <Link 
+            to="/contact"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200"
+          >
+            <MessageSquare className="w-4 h-4" /> Send Us a Message
+          </Link>
+          <a 
+            href="mailto:contact@ambershealthcare.com"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-emerald-800 font-bold hover:bg-emerald-100 transition-all border border-emerald-200"
+          >
+            <Mail className="w-4 h-4 text-emerald-600" /> contact@ambershealthcare.com
+          </a>
+        </div>
       </div>
     </div>
   );
