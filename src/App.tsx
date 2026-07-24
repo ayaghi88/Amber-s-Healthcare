@@ -33,7 +33,11 @@ import {
   Edit,
   Loader2,
   Bell,
-  Smartphone
+  Smartphone,
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
+  Lock
 } from "lucide-react";
 import { cn } from "./lib/utils";
 import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
@@ -135,6 +139,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-8">
             <Link to="/jobs" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Find Jobs</Link>
             <Link to="/pricing" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pricing</Link>
+            <Link to="/faq" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">FAQ / Q&A</Link>
             <Link to="/refer" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors flex items-center gap-1.5">
               <Gift className="w-4 h-4 text-emerald-600" /> Refer & Earn $100
             </Link>
@@ -190,6 +195,7 @@ const Navbar = () => {
             <div className="px-4 py-6 space-y-4">
               <Link to="/jobs" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Find Jobs</Link>
               <Link to="/pricing" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>Pricing</Link>
+              <Link to="/faq" className="block text-lg font-medium text-slate-700" onClick={() => setIsOpen(false)}>FAQ / Q&A</Link>
               <Link to="/refer" className="block text-lg font-medium text-slate-700 flex items-center gap-2" onClick={() => setIsOpen(false)}>
                 <Gift className="w-5 h-5 text-emerald-600" /> Refer & Earn $100
               </Link>
@@ -252,13 +258,16 @@ const Footer = () => (
             <li><Link to="/jobs" className="hover:text-emerald-600 transition-colors">Find Jobs</Link></li>
             <li><Link to="/pricing" className="hover:text-emerald-600 transition-colors">Pricing</Link></li>
             <li><Link to="/service-area" className="hover:text-emerald-600 transition-colors">Service Area</Link></li>
+            <li><Link to="/faq" className="hover:text-emerald-600 transition-colors font-medium text-slate-800">FAQ / Q&A</Link></li>
             <li><Link to="/refer" className="hover:text-emerald-600 transition-colors font-medium text-emerald-700 flex items-center gap-1">🎁 Refer & Earn $100</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold text-slate-900 mb-4">Legal</h4>
+          <h4 className="font-bold text-slate-900 mb-4">Legal & Privacy</h4>
           <ul className="space-y-2 text-slate-600">
+            <li><Link to="/terms-of-service" className="hover:text-emerald-600 transition-colors">Terms of Service</Link></li>
+            <li><Link to="/privacy" className="hover:text-emerald-600 transition-colors">Privacy Policy</Link></li>
             <li><Link to="/terms" className="hover:text-emerald-600 transition-colors">Candidate Terms</Link></li>
             <li><Link to="/agreement" className="hover:text-emerald-600 transition-colors">Employer Agreement</Link></li>
           </ul>
@@ -773,6 +782,9 @@ export default function App() {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/agreement" element={<EmployerAgreement />} />
               <Route path="/terms" element={<CandidateTerms />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/faq" element={<FAQ />} />
               <Route path="/refer" element={<ReferProgram />} />
               <Route path="/settings" element={<AccountSettings />} />
             </Routes>
@@ -4585,6 +4597,310 @@ const CandidateTerms = () => {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Terms of Service Component ---
+const TermsOfService = () => {
+  return (
+    <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
+      <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-slate-200">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900">Master Terms of Service</h1>
+            <p className="text-sm text-slate-500">Effective Date: Last Updated July 2026</p>
+          </div>
+        </div>
+
+        <div className="prose prose-slate max-w-none text-slate-600 space-y-6 text-sm sm:text-base leading-relaxed">
+          <p>
+            Welcome to <strong>Amber’s Healthcare Services</strong> ("Amber’s Healthcare", "we", "us", or "our"). These Master Terms of Service govern your access to and use of our website (<code>ambershealthcare.com</code>), candidate portal, employer portal, and direct-hire healthcare recruitment services in the Baton Rouge, Louisiana region.
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">1. Nature of Services</h2>
+          <p>
+            Amber’s Healthcare is a specialized direct-hire recruitment matching platform connecting local healthcare clinics, private practices, and medical groups with vetted remote healthcare administrative professionals (e.g., Medical Billing, Coding, Prior Authorization, Front Desk, Patient Scheduling, Medical Secretaries).
+          </p>
+          <p>
+            <strong>Direct-Hire Directives:</strong> Amber’s Healthcare acts solely as an independent recruitment intermediary. Candidates placed through our platform are hired directly by the employer. Amber’s Healthcare does not employ, manage, supervise, or issue payroll/tax documentation to placed candidates.
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">2. Employer Obligations & Pricing</h2>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>Flat Placement Fee:</strong> Employers agree to pay a flat placement fee of <strong>$4,500.00</strong> per candidate hired upon introduction.</li>
+            <li><strong>Invoicing & Payment:</strong> Invoices are generated automatically upon hire confirmation and are due upon receipt. Payments are processed securely via our digital portal or PayPal.</li>
+            <li><strong>Non-Circumvention:</strong> Employers agree not to bypass Amber’s Healthcare to hire candidates directly without fulfilling placement fee obligations for a period of twelve (12) months following introduction.</li>
+            <li><strong>Full Terms:</strong> Employers must also review and agree to our <Link to="/agreement" className="text-emerald-600 font-semibold underline">Employer Service Agreement</Link>.</li>
+          </ul>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">3. Candidate Rights & Responsibilities</h2>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>No Placement Fees:</strong> Candidates are never charged any fees for registration, resume matching, or job placement.</li>
+            <li><strong>Geographic Eligibility:</strong> Candidates must reside within our supported Louisiana parishes (East Baton Rouge, West Baton Rouge, Ascension, Livingston, Iberville, East Feliciana, West Feliciana, Pointe Coupee, St. Helena).</li>
+            <li><strong>Accuracy:</strong> Candidates guarantee that all work experience, certifications, and credentials provided are truthful and accurate.</li>
+            <li><strong>Full Terms:</strong> Candidates must review and accept our <Link to="/terms" className="text-emerald-600 font-semibold underline">Candidate Terms & Conditions</Link>.</li>
+          </ul>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">4. Community $100 Referral Program</h2>
+          <p>
+            Anyone can participate in our $100 Referral Program by submitting candidate referrals through our referral page. When a referred candidate is hired by an employer and completes <strong>two (2) full pay periods</strong>, the referrer receives a <strong>$100.00 cash referral reward</strong>. Referrers do not need an employer or candidate account to claim rewards.
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">5. Limitation of Liability</h2>
+          <p>
+            In no event shall Amber’s Healthcare be liable for any indirect, incidental, consequential, or punitive damages arising out of employment decisions, candidate performance, or service interruptions.
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">6. Contact Information</h2>
+          <p>
+            If you have any questions regarding these Terms of Service, please reach out to us at:
+            <br />
+            <strong>Email:</strong> <a href="mailto:contact@ambershealthcare.com" className="text-emerald-600 font-semibold">contact@ambershealthcare.com</a>
+            <br />
+            <strong>Location:</strong> Baton Rouge, LA
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Privacy Policy Component ---
+const PrivacyPolicy = () => {
+  return (
+    <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
+      <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-slate-200">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900">Privacy Policy</h1>
+            <p className="text-sm text-slate-500">Effective Date: Last Updated July 2026</p>
+          </div>
+        </div>
+
+        <div className="prose prose-slate max-w-none text-slate-600 space-y-6 text-sm sm:text-base leading-relaxed">
+          <p>
+            At <strong>Amber’s Healthcare Services</strong> ("Amber’s Healthcare", "we", "our"), we respect your privacy and are committed to protecting the personal data you share with us. This Privacy Policy outlines how we collect, use, store, and safeguard your personal information when you use <code>ambershealthcare.com</code>.
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">1. Information We Collect</h2>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>Candidate Information:</strong> Name, email address, phone number, parish/location, healthcare administrative specialties, years of experience, desired salary/hourly rate, resume text, and interview preferences.</li>
+            <li><strong>Employer Information:</strong> Organization name, contact person, email address, phone number, clinic address, parish, job post requirements, and billing history.</li>
+            <li><strong>Referrer Information:</strong> Referrer name, email address, and referred candidate details for reward payouts.</li>
+            <li><strong>Payment & Invoice Information:</strong> Transaction amounts and payment confirmation statuses processed via PayPal. We do NOT store full credit card numbers directly on our servers.</li>
+          </ul>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">2. How We Use Your Information</h2>
+          <p>We use the collected information strictly for legitimate recruitment and business purposes, including:</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Matching qualified remote healthcare candidates with open practice job listings.</li>
+            <li>Facilitating employer-candidate interview scheduling and introductions.</li>
+            <li>Sending automated email notifications regarding match status, job applications, invoices, and referral milestone alerts.</li>
+            <li>Processing placement invoices via secure PayPal integration.</li>
+            <li>Maintaining system security and preventing fraudulent account registration.</li>
+          </ul>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">3. Data Sharing & Third Parties</h2>
+          <p>
+            We do NOT sell, rent, or trade your personal information to third-party marketing companies. Personal data is shared only under strict operational necessity:
+          </p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>With Hiring Employers:</strong> Candidate profile details and contact information are shared with participating healthcare organizations upon mutual introduction.</li>
+            <li><strong>With Verified Candidates:</strong> Employer job details and contact preferences are shared when an interview is requested.</li>
+            <li><strong>Service Providers:</strong> Secure payment processing via PayPal and transactional email dispatch via authenticated SMTP services.</li>
+          </ul>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">4. Data Security & Storage</h2>
+          <p>
+            We employ industry-standard encryption, password hashing, and server-side security measures to safeguard your personal information. Access to admin controls is strictly restricted to authorized administrative personnel (<code>amber@ambershealthcare.com</code>).
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">5. Your Privacy Rights</h2>
+          <p>
+            You have the right to access, update, or request the deletion of your personal account data at any time. You can edit your profile information directly inside your <strong>Account Settings</strong> or contact us directly at <a href="mailto:contact@ambershealthcare.com" className="text-emerald-600 font-semibold underline">contact@ambershealthcare.com</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- FAQ Component ---
+const FAQ = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  const faqs = [
+    {
+      category: "employers",
+      question: "How much does Amber’s Healthcare cost for employers?",
+      answer: "We charge a simple, transparent flat fee of $4,500.00 per successful candidate placement. There are no upfront fees, listing fees, or monthly subscriptions. You only pay when you decide to hire a candidate we introduce."
+    },
+    {
+      category: "employers",
+      question: "Are there any hidden taxes or surprise fees added to the $4,500 invoice?",
+      answer: "No. The $4,500 placement fee is flat and transparent. All tax considerations are included directly in the $4,500 total amount billed upon hire confirmation."
+    },
+    {
+      category: "employers",
+      question: "What healthcare administrative roles do you staff?",
+      answer: "We specialize in remote healthcare administrative talent across Baton Rouge practices, including Medical Billing & Coding, Prior Authorization Specialists, Medical Secretaries & Scribes, Patient Scheduling Coordinators, Front Desk Managers, and Revenue Cycle Specialists."
+    },
+    {
+      category: "candidates",
+      question: "Is there any cost for job seekers / candidates?",
+      answer: "None! Candidates are 100% free to register, create profiles, view listings, and get matched with top local healthcare employers."
+    },
+    {
+      category: "candidates",
+      question: "What parishes in Louisiana do you support?",
+      answer: "We focus on candidate placements across 9 local parishes in the greater Baton Rouge area: East Baton Rouge, West Baton Rouge, Ascension, Livingston, Iberville, East Feliciana, West Feliciana, Pointe Coupee, and St. Helena."
+    },
+    {
+      category: "referrals",
+      question: "How does the $100 Referral Reward Program work?",
+      answer: "Anyone in the community can refer a candidate! Simply visit our Refer page, enter your contact information and the candidate's details. When your referred candidate is successfully hired by a healthcare practice and completes two (2) full pay periods, you earn a $100 cash referral bonus."
+    },
+    {
+      category: "referrals",
+      question: "Do I need an employer or candidate account to receive referral fees?",
+      answer: "No account registration is required for referrers! We track referrals using your email address and notify you as milestones are reached."
+    },
+    {
+      category: "payments",
+      question: "How are placement invoices paid?",
+      answer: "Employers can pay invoices instantly via PayPal or credit card directly in the Employer Dashboard under Placement Invoices using our secure payment portal."
+    },
+    {
+      category: "payments",
+      question: "How do email notifications work?",
+      answer: "Whenever an application, match alert, status change, or referral is submitted, automated emails are dispatched directly to the candidate/employer and copied to our administrative team so everyone stays up-to-date in real-time."
+    }
+  ];
+
+  const filteredFaqs = faqs.filter(faq => {
+    const matchesSearch = faq.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = activeCategory === "all" || faq.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div className="pt-32 pb-24 max-w-4xl mx-auto px-4">
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm mb-4">
+          <HelpCircle className="w-4 h-4" /> Frequently Asked Questions
+        </div>
+        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
+          Everything You Need to Know
+        </h1>
+        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          Have questions about our $4,500 flat fee direct-hire recruiting, candidate matching, or $100 referral rewards? Find answers below.
+        </p>
+
+        {/* Search Input */}
+        <div className="mt-8 max-w-md mx-auto relative">
+          <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input 
+            type="text"
+            placeholder="Search questions or keywords..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 shadow-sm"
+          />
+        </div>
+
+        {/* Category Tabs */}
+        <div className="flex flex-wrap justify-center gap-2 mt-6">
+          {[
+            { id: "all", label: "All Questions" },
+            { id: "employers", label: "For Employers" },
+            { id: "candidates", label: "For Candidates" },
+            { id: "referrals", label: "Referral Rewards" },
+            { id: "payments", label: "Payments & Tech" }
+          ].map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer",
+                activeCategory === cat.id 
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Accordion List */}
+      <div className="space-y-4">
+        {filteredFaqs.map((faq, idx) => {
+          const isOpen = openIndex === idx;
+          return (
+            <div 
+              key={idx}
+              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm transition-all hover:border-slate-300"
+            >
+              <button
+                onClick={() => setOpenIndex(isOpen ? null : idx)}
+                className="w-full px-6 py-5 text-left font-bold text-slate-900 flex justify-between items-center gap-4 cursor-pointer hover:text-emerald-600 transition-colors"
+              >
+                <span className="text-base sm:text-lg">{faq.question}</span>
+                {isOpen ? <ChevronUp className="w-5 h-5 text-emerald-600 shrink-0" /> : <ChevronDown className="w-5 h-5 text-slate-400 shrink-0" />}
+              </button>
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="px-6 pb-6 text-slate-600 text-sm sm:text-base leading-relaxed border-t border-slate-50 pt-4">
+                      {faq.answer}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+
+        {filteredFaqs.length === 0 && (
+          <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200">
+            <HelpCircle className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+            <p className="text-slate-600 font-medium">No matching questions found.</p>
+            <button 
+              onClick={() => { setSearchTerm(""); setActiveCategory("all"); }}
+              className="mt-3 text-sm text-emerald-600 font-bold hover:underline"
+            >
+              Reset Filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-12 text-center bg-emerald-50 rounded-3xl p-8 border border-emerald-100">
+        <h3 className="text-xl font-bold text-slate-900 mb-2">Still have questions?</h3>
+        <p className="text-slate-600 mb-6 text-sm sm:text-base">Our Baton Rouge placement advisors are here to assist you.</p>
+        <a 
+          href="mailto:contact@ambershealthcare.com"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200"
+        >
+          <Mail className="w-4 h-4" /> Contact Us Directly
+        </a>
       </div>
     </div>
   );
