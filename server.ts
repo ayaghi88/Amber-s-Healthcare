@@ -117,13 +117,13 @@ function dispatchNotification(recipientEmail: string | null, recipientPhone: str
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
             <div style="background-color: #020617; padding: 20px 24px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
               <h2 style="color: #10b981; margin: 0; font-size: 22px; font-weight: 800; tracking: -0.5px;">Amber's Healthcare</h2>
-              <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 13px; font-weight: 500;">Baton Rouge Remote Healthcare Admin Placements</p>
+              <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 13px; font-weight: 500;">Global Remote Healthcare Administrative Matchmaker</p>
             </div>
             <h3 style="color: #0f172a; margin-top: 0; font-size: 18px; font-weight: 700;">${subject || "Notification from Amber's Healthcare"}</h3>
             <div style="color: #334155; line-height: 1.6; font-size: 14px; white-space: pre-wrap; background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9;">${message}</div>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;" />
             <p style="color: #64748b; font-size: 12px; text-align: center; margin: 0;">
-              <strong>Amber's Healthcare Services</strong> • Baton Rouge, LA<br/>
+              <strong>Amber's Healthcare</strong> • Operating under Ember Core Studio LLC<br/>
               Contact: <a href="mailto:contact@ambershealthcare.com" style="color: #0284c7; text-decoration: none;">contact@ambershealthcare.com</a> | Website: <a href="https://ambershealthcare.com" style="color: #0284c7; text-decoration: none;">ambershealthcare.com</a>
             </p>
           </div>
@@ -660,7 +660,7 @@ async function startServer() {
             adminMsg = `Admin Notice:\n\nEmployer **${intro.company_name}** has set candidate **${intro.candidate_name}**'s introduction to **Pending Review** for **${intro.job_title}**.`;
           } else if (status === 'interview_declined') {
             candSubject = `Application Update: ${intro.job_title} at ${intro.company_name}`;
-            candMsg = `Hi ${intro.candidate_name},\n\nThank you for your interest in the **${intro.job_title}** position at **${intro.company_name}**.\n\nAfter reviewing your candidate profile, the employer has decided not to move forward with an interview for this role at this time.\n\nWe will keep actively matching you with other outstanding Baton Rouge healthcare practices!\n\nWarm regards,\nAmber's Healthcare Team`;
+            candMsg = `Hi ${intro.candidate_name},\n\nThank you for your interest in the **${intro.job_title}** position at **${intro.company_name}**.\n\nAfter reviewing your candidate profile, the employer has decided not to move forward with an interview for this role at this time.\n\nWe will keep actively matching you with other outstanding healthcare organizations in our network!\n\nWarm regards,\nAmber's Healthcare Team`;
             
             adminSubject = `Interview Declined: ${intro.company_name} & ${intro.candidate_name}`;
             adminMsg = `Admin Notice:\n\nEmployer **${intro.company_name}** has declined to interview candidate **${intro.candidate_name}** for **${intro.job_title}**.`;
@@ -790,7 +790,7 @@ async function startServer() {
       const id = uuidv4();
       db.prepare(`
         INSERT INTO employers (id, user_id, company_name, contact_name, phone, parish, website, accepted_agreement_at)
-        VALUES (?, ?, 'Pending Setup', 'Pending Setup', '', 'East Baton Rouge', '', CURRENT_TIMESTAMP)
+        VALUES (?, ?, 'Pending Setup', 'Pending Setup', '', 'Texas (Deregulated)', '', CURRENT_TIMESTAMP)
       `).run(id, req.user.id);
     }
     res.json({ success: true });
@@ -807,7 +807,7 @@ async function startServer() {
       const id = uuidv4();
       db.prepare(`
         INSERT INTO candidates (id, user_id, full_name, phone, parish, role_specialties, experience_summary, accepted_terms_at)
-        VALUES (?, ?, 'Pending Setup', '', 'East Baton Rouge', '[]', '', CURRENT_TIMESTAMP)
+        VALUES (?, ?, 'Pending Setup', '', 'Remote (Global)', '[]', '', CURRENT_TIMESTAMP)
       `).run(id, req.user.id);
     }
     res.json({ success: true });
@@ -1081,12 +1081,12 @@ async function startServer() {
       try {
         // 1. Notify Referrer
         const referrerSubject = `Referral Received: ${candidate_name}`;
-        const referrerMsg = `Hi ${referrer_name.trim()},\n\nThank you for referring **${candidate_name.trim()}** to Amber's Healthcare!\n\nYour referral has been successfully registered. We will monitor their matches and keep you updated on their status. If they are placed, we will notify you regarding any referral bonuses!\n\nThank you for supporting our healthcare community in Baton Rouge.`;
+        const referrerMsg = `Hi ${referrer_name.trim()},\n\nThank you for referring **${candidate_name.trim()}** to Amber's Healthcare!\n\nYour referral has been successfully registered. We will monitor their matches and keep you updated on their status. When they complete 2 full pay periods with a placed employer, you will receive your $100.00 cash referral reward!\n\nThank you for supporting our healthcare community.`;
         dispatchNotification(referrer_email.trim(), null, 'email', referrerSubject, referrerMsg);
 
         // 2. Notify Candidate (Referred person)
         const candSubject = `You have been referred to Amber's Healthcare by ${referrer_name.trim()}`;
-        const candMsg = `Hi ${candidate_name.trim()},\n\nExciting news! **${referrer_name.trim()}** has referred you for remote administrative or billing positions with Amber's Healthcare in the Baton Rouge region.\n\nWe connect local talent with trusted healthcare employers. To activate your candidate profile and start receiving matches, please complete your registration on our platform.\n\nLooking forward to working with you!`;
+        const candMsg = `Hi ${candidate_name.trim()},\n\nExciting news! **${referrer_name.trim()}** has referred you for remote administrative or billing positions with Amber's Healthcare.\n\nWe connect global administrative talent with trusted healthcare employers. To activate your candidate profile and start receiving matches, please complete your registration on our platform.\n\nLooking forward to working with you!`;
         dispatchNotification(candidate_email.trim(), null, 'email', candSubject, candMsg);
 
         // 3. Notify Admin
@@ -1100,7 +1100,7 @@ async function startServer() {
         logDebug(`Issue sending referral notifications: ${notifyErr.message}`);
       }
 
-      res.json({ success: true, message: "Referral submitted successfully! Thank you for referring healthcare talent to our Baton Rouge community." });
+      res.json({ success: true, message: "Referral submitted successfully! Thank you for referring healthcare talent to Amber's Healthcare." });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }

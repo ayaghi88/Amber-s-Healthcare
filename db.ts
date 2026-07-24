@@ -357,10 +357,10 @@ if (jobCount === 0) {
       `).run(
         profileId,
         employerUser.id,
-        "Amber's Healthcare Services",
+        "Amber's Healthcare",
         "Amber Samantha Yaghi",
         "225-555-0199",
-        "East Baton Rouge",
+        "Texas (Deregulated)",
         "https://ambershealthcare.com"
       );
       employerProfile = { id: profileId };
@@ -375,12 +375,12 @@ if (jobCount === 0) {
       jobId,
       employerProfile.id,
       "Marketing Associate",
-      "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare Services in East Baton Rouge. The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Prior experience in professional services or healthcare marketing is a plus.",
-      "East Baton Rouge",
+      "We are seeking a creative, professional, and compassionate Marketing Associate to join Amber's Healthcare (operating under Ember Core Studio LLC). The candidate will manage digital marketing campaigns, handle referral partner outreach, and coordinate healthcare educational activities. Remote administrative and marketing experience is preferred.",
+      "Texas (Remote)",
       "Marketing Associate"
     );
     
-    console.log("Successfully seeded Marketing Associate job posting for Amber's Healthcare Services.");
+    console.log("Successfully seeded Marketing Associate job posting for Amber's Healthcare.");
     
     // Save to backup file
     backupDatabase();

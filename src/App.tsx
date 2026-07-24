@@ -44,7 +44,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { cn } from "./lib/utils";
-import { ALLOWED_PARISHES, ROLE_CATEGORIES, PRICING } from "./constants";
+import { ALLOWED_PARISHES, ALLOWED_EMPLOYER_STATES, ROLE_CATEGORIES, PRICING } from "./constants";
 
 export const INTERVIEW_FORMATS_LIST = [
   "Virtual Video Call",
@@ -249,7 +249,7 @@ const Footer = () => (
             <span className="text-xl font-bold text-slate-900 tracking-tight">Amber’s Healthcare</span>
           </div>
           <p className="text-slate-600 max-w-sm mb-6">
-            Connecting Baton Rouge healthcare organizations with top-tier remote administrative talent. Direct-hire recruiting made simple.
+            Connecting deregulated healthcare organizations with top-tier global remote administrative talent. Direct-hire 1099 matchmaking made simple.
           </p>
           <div className="flex gap-4">
             <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 hover:bg-emerald-100 hover:text-emerald-600 transition-colors cursor-pointer">
@@ -311,14 +311,14 @@ const Home = () => (
           transition={{ duration: 0.6 }}
         >
           <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-sm font-semibold mb-6 border border-emerald-100">
-            Baton Rouge & Surrounding Areas Only
+            Deregulated Healthcare Employer Network &amp; Global Talent
           </span>
           <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 leading-[1.1]">
-            Baton Rouge Remote <br />
-            <span className="text-emerald-600">Healthcare Admin</span> Placements
+            Global Remote <br />
+            <span className="text-emerald-600">Healthcare Admin</span> Matchmaking
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            We specialize exclusively in remote healthcare administrative placements for clinics, practices, and organizations across the Baton Rouge region.
+            We connect healthcare clinics &amp; practices in deregulated states with qualified global remote administrative talent for a flat $4,500 fee.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/register" className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">
@@ -337,7 +337,7 @@ const Home = () => (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">Specialized Roles We Place</h2>
-          <p className="text-slate-600">Exclusively remote, administrative, and local to Baton Rouge.</p>
+          <p className="text-slate-600">Remote, non-clinical healthcare administrative professionals supported globally.</p>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -369,12 +369,12 @@ const Home = () => (
             </div>
             <h3 className="text-3xl font-bold mb-6">For Employers</h3>
             <p className="text-slate-400 mb-8 text-lg">
-              Find qualified, local administrative talent for your remote roles. No staffing contracts, no percentages—just a flat placement fee.
+              Find qualified, global administrative talent for your remote roles. No complex staffing contracts or percentages—just a flat $4,500 fee upon hire.
             </p>
             <ul className="space-y-4 mb-10">
               <li className="flex items-center gap-3 text-slate-300">
                 <CheckCircle className="w-5 h-5 text-emerald-400" />
-                Direct-hire placements only
+                Direct 1099 contractor placements
               </li>
               <li className="flex items-center gap-3 text-slate-300">
                 <CheckCircle className="w-5 h-5 text-emerald-400" />
@@ -382,7 +382,7 @@ const Home = () => (
               </li>
               <li className="flex items-center gap-3 text-slate-300">
                 <CheckCircle className="w-5 h-5 text-emerald-400" />
-                Baton Rouge region specialists
+                Deregulated state specialists (TX, CO, MO, IA, GA, ID, UT)
               </li>
             </ul>
             <Link to="/register" className="inline-block px-8 py-4 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all">
@@ -396,20 +396,20 @@ const Home = () => (
             </div>
             <h3 className="text-3xl font-bold mb-6">For Candidates</h3>
             <p className="text-slate-100/80 mb-8 text-lg">
-              Looking for a remote admin role in healthcare? Join our local network and get introduced to top Baton Rouge practices.
+              Looking for a remote admin role in healthcare? Join our global talent network and get matched with top healthcare practices.
             </p>
             <ul className="space-y-4 mb-10">
               <li className="flex items-center gap-3 text-emerald-50">
                 <CheckCircle className="w-5 h-5 text-emerald-200" />
-                Free for all candidates
+                100% Free for all candidates
               </li>
               <li className="flex items-center gap-3 text-emerald-50">
                 <CheckCircle className="w-5 h-5 text-emerald-200" />
-                Remote-only opportunities
+                Global remote opportunities
               </li>
               <li className="flex items-center gap-3 text-emerald-50">
                 <CheckCircle className="w-5 h-5 text-emerald-200" />
-                Direct hire by employers
+                Direct contractor engagements
               </li>
             </ul>
             <Link to="/register" className="inline-block px-8 py-4 rounded-2xl bg-white text-emerald-600 font-bold hover:bg-slate-50 transition-all">
@@ -428,10 +428,10 @@ const Home = () => (
             <h2 className="text-4xl font-extrabold text-slate-900 mb-8">How It Works</h2>
             <div className="space-y-8">
               {[
-                { title: "Employers post a role", desc: "List your remote administrative needs for the Baton Rouge region." },
-                { title: "We introduce local talent", desc: "We shortlist qualified candidates from our local database." },
-                { title: "Employer hires directly", desc: "You manage the interviews and make the final hiring decision." },
-                { title: "One flat placement fee", desc: "A simple $4,500 fee upon successful hire. No hidden costs." }
+                { title: "Employers post a role", desc: "List your remote administrative needs for your medical practice or clinic." },
+                { title: "We match global talent", desc: "We shortlist qualified administrative candidates from our global remote talent pool." },
+                { title: "Employer contracts directly", desc: "You interview candidates and contract directly under a 1099 framework." },
+                { title: "One flat placement fee", desc: "A simple $4,500 fee upon successful candidate acceptance. 100% non-refundable." }
               ].map((step, i) => (
                 <div key={i} className="flex gap-6">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">
@@ -589,7 +589,7 @@ const ReferProgram = () => {
         </span>
         <h1 className="text-4xl font-extrabold text-slate-900 mb-4">Refer a Colleague & Earn $100</h1>
         <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-          Help us connect local healthcare administrative talent with top Baton Rouge region medical practices. You can refer as many people as you want!
+          Help us connect qualified healthcare administrative talent with top medical practices. You can refer as many job seekers as you want!
         </p>
       </div>
 
@@ -602,15 +602,15 @@ const ReferProgram = () => {
               <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">1</div>
               <div>
                 <h3 className="font-bold text-slate-900 text-sm">Submit the Referral</h3>
-                <p className="text-xs text-slate-500 mt-1">Provide your name and email plus your friend's contact details. No account is required.</p>
+                <p className="text-xs text-slate-500 mt-1">Provide your name and email plus your candidate's contact details. No account is required.</p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">2</div>
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">Your Friend Gets Hired</h3>
-                <p className="text-xs text-slate-500 mt-1">We match them with remote or local roles in the Baton Rouge region and help them get placed.</p>
+                <h3 className="font-bold text-slate-900 text-sm">Your Candidate Gets Hired</h3>
+                <p className="text-xs text-slate-500 mt-1">We match them with remote administrative roles across our healthcare practice network.</p>
               </div>
             </div>
 
@@ -727,31 +727,82 @@ const ReferProgram = () => {
 
 const ServiceArea = () => (
   <div className="pt-32 pb-24">
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-5xl mx-auto px-4">
       <div className="text-center mb-16">
-        <h1 className="text-4xl font-extrabold text-slate-900 mb-6">Serving the Baton Rouge Region</h1>
-        <p className="text-xl text-slate-600">We exclusively serve candidates and employers within these Louisiana parishes.</p>
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full mb-4 uppercase tracking-wider">
+          Coverage &amp; Jurisdiction Overview
+        </span>
+        <h1 className="text-4xl font-extrabold text-slate-900 mb-6">Service Area &amp; State Eligibility</h1>
+        <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+          Amber’s Healthcare connects healthcare clinics in approved deregulated states with top-tier global remote administrative talent.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          {ALLOWED_PARISHES.map(parish => (
-            <div key={parish} className="p-6 bg-white rounded-2xl border border-slate-200 flex items-center gap-4">
-              <MapPin className="w-6 h-6 text-emerald-600" />
-              <span className="text-lg font-bold text-slate-800">{parish} Parish</span>
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
+              <Building2 className="w-6 h-6" />
             </div>
-          ))}
-        </div>
-        <div className="bg-slate-900 rounded-3xl p-12 text-white flex flex-col justify-center">
-          <h2 className="text-2xl font-bold mb-6">Why Local Matters</h2>
-          <p className="text-slate-300 leading-relaxed mb-8">
-            Even for remote roles, local connections foster better communication, shared community values, and long-term stability for healthcare practices in our region.
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Employer Coverage</h2>
+              <p className="text-xs text-slate-500 font-medium">Deregulated Placement States Only</p>
+            </div>
+          </div>
+
+          <p className="text-slate-600 text-sm leading-relaxed">
+            Healthcare practices and clinics hiring through Amber’s Healthcare must be located in one of our seven approved deregulated placement states:
           </p>
-          <div className="p-6 bg-white/10 rounded-2xl border border-white/10">
-            <p className="text-emerald-400 font-bold mb-2">Restriction Notice</p>
-            <p className="text-sm text-slate-400">
-              Candidates and employers must be physically located within these parishes to use the platform.
+
+          <div className="grid grid-cols-2 gap-3">
+            {ALLOWED_EMPLOYER_STATES.map(st => (
+              <div key={st.code} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-bold text-slate-800">{st.name} ({st.code})</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs leading-relaxed font-medium">
+            ⚠️ <strong>Regulated State Notice:</strong> Practices located in Louisiana (LA) or other regulated employment agency states are strictly prohibited from paying fees or posting positions on this platform.
+          </div>
+        </div>
+
+        <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-xl flex flex-col justify-between space-y-6">
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Candidate Pool</h2>
+                <p className="text-xs text-emerald-400 font-medium">Global Remote Talent</p>
+              </div>
+            </div>
+
+            <p className="text-slate-300 text-sm leading-relaxed mb-6">
+              Candidates applying for remote non-clinical healthcare administrative, billing, coding, and scheduling positions are supported <strong>globally</strong>!
             </p>
+
+            <ul className="space-y-3 text-sm text-slate-300 mb-8">
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                No geographic restrictions for job seekers
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                100% free for all candidates worldwide
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                Direct 1099 independent contractor framework
+              </li>
+            </ul>
+          </div>
+
+          <div className="p-5 bg-white/10 rounded-2xl border border-white/10 text-xs text-slate-300">
+            <p className="text-emerald-400 font-bold mb-1">Simple Direct Matchmaking</p>
+            <p>Our platform facilitates seamless digital introductions between qualified global candidates and verified deregulated healthcare employers.</p>
           </div>
         </div>
       </div>
@@ -1513,7 +1564,7 @@ const CandidateDashboard = () => {
           {isProfileComplete && (
             <div className="p-4 bg-emerald-50 text-emerald-800 text-sm rounded-2xl border border-emerald-100 font-medium flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <span>Your profile is fully saved and active in our Baton Rouge talent pool. Keep your specialties and summary up to date to get matched!</span>
+              <span>Your profile is fully saved and active in our global remote talent pool. Keep your specialties and summary up to date to get matched!</span>
             </div>
           )}
 
@@ -1543,7 +1594,7 @@ const CandidateDashboard = () => {
               <input 
                 type="tel" 
                 required
-                placeholder="e.g. (225) 555-0199"
+                placeholder="e.g. (555) 123-4567"
                 className={cn(
                   "w-full px-4 py-3 rounded-xl border outline-none transition-all",
                   (submitted && !profile.phone.trim()) 
@@ -1557,14 +1608,15 @@ const CandidateDashboard = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Your Parish (Baton Rouge Region Only)</label>
-            <select 
+            <label className="block text-sm font-bold text-slate-700 mb-2">Your Primary Location / State &amp; Country</label>
+            <input 
+              type="text"
+              placeholder="e.g. Texas, USA (Global Remote Allowed)"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500"
               value={profile.parish}
               onChange={e => setProfile({...profile, parish: e.target.value})}
-            >
-              {ALLOWED_PARISHES.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+            />
+            <p className="text-xs text-slate-500 mt-1">Candidates for non-clinical administrative healthcare roles are eligible globally.</p>
           </div>
 
           <div>
@@ -2905,7 +2957,7 @@ const JobBoard = () => {
     <div className="pt-32 pb-24 max-w-5xl mx-auto px-4">
       <div className="mb-12">
         <h1 className="text-4xl font-extrabold text-slate-900 mb-4">Remote Admin Jobs</h1>
-        <p className="text-xl text-slate-600">Baton Rouge & surrounding areas only.</p>
+        <p className="text-xl text-slate-600">Remote administrative, billing, coding &amp; intake positions for healthcare practices.</p>
         
         {interestError && (
           <div className="mt-4 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl font-semibold text-sm flex items-center justify-between">
@@ -2933,7 +2985,7 @@ const JobBoard = () => {
                   >
                     {job.title}
                   </h2>
-                  <p className="text-slate-500 font-medium">{job.company_name} • {job.parish} Parish</p>
+                  <p className="text-slate-500 font-medium">{job.company_name} • {job.parish?.includes("Parish") || job.parish?.includes("Remote") || job.parish?.includes("State") ? job.parish : `${job.parish}`}</p>
                 </div>
                 <div className="flex items-center gap-2 text-emerald-600 font-bold">
                   <ShieldCheck className="w-5 h-5" />
@@ -2951,7 +3003,7 @@ const JobBoard = () => {
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-2 text-slate-400">
                     <MapPin className="w-4 h-4" />
-                    <span>Baton Rouge Region</span>
+                    <span>Deregulated Remote Position</span>
                   </div>
                   <button 
                     onClick={() => setSelectedJobDetails(job)}
@@ -4607,7 +4659,7 @@ const CandidateTerms = () => {
             <li><strong>Employment Relationship:</strong> Amber’s Healthcare does not employ, manage, or direct candidates. Any employment offer or contract will be directly between you and the hiring employer.</li>
             <li><strong>No Placement Guarantee:</strong> While we actively match profiles with open listings, Amber’s Healthcare does not guarantee job placement or interviews.</li>
             <li><strong>Accurate Information:</strong> You agree to provide true, accurate, and up-to-date resume and specialty information.</li>
-            <li><strong>Local Only:</strong> Candidates must be physically located within our allowed Baton Rouge region parishes.</li>
+            <li><strong>Global Remote Candidate Pool:</strong> Candidate registrations are open globally to qualified administrative job seekers for remote non-clinical healthcare positions.</li>
           </ul>
         </div>
         <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -4652,12 +4704,12 @@ const TermsOfService = () => {
 
         <div className="prose prose-slate max-w-none text-slate-600 space-y-6 text-sm sm:text-base leading-relaxed">
           <p>
-            Welcome to <strong>Amber’s Healthcare Services</strong> ("Amber’s Healthcare", "we", "us", or "our"). These Master Terms of Service govern your access to and use of our website (<code>ambershealthcare.com</code>), candidate portal, employer portal, and direct-hire healthcare recruitment services in the Baton Rouge, Louisiana region.
+            Welcome to <strong>Amber’s Healthcare Services</strong> ("Amber’s Healthcare", "we", "us", or "our"). These Master Terms of Service govern your access to and use of our website (<code>ambershealthcare.com</code>), candidate portal, employer portal, and direct-hire healthcare recruitment services for employers in deregulated states and candidates globally.
           </p>
 
           <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">1. Nature of Services</h2>
           <p>
-            Amber’s Healthcare is a specialized direct-hire recruitment matching platform connecting local healthcare clinics, private practices, and medical groups with vetted remote healthcare administrative professionals (e.g., Medical Billing, Coding, Prior Authorization, Front Desk, Patient Scheduling, Medical Secretaries).
+            Amber’s Healthcare is a specialized direct-hire recruitment matching platform connecting healthcare clinics, private practices, and medical groups in approved deregulated states with vetted global remote healthcare administrative professionals (e.g., Medical Billing, Coding, Prior Authorization, Front Desk, Patient Scheduling, Medical Secretaries).
           </p>
           <p>
             <strong>Direct-Hire Directives:</strong> Amber’s Healthcare acts solely as an independent recruitment intermediary. Candidates placed through our platform are hired directly by the employer. Amber’s Healthcare does not employ, manage, supervise, or issue payroll/tax documentation to placed candidates.
@@ -4682,7 +4734,7 @@ const TermsOfService = () => {
           <h2 className="text-xl font-bold text-slate-900 pt-4 border-t border-slate-100">4. Candidate Rights & Responsibilities</h2>
           <ul className="list-disc pl-5 space-y-2">
             <li><strong>No Placement Fees:</strong> Candidates are never charged any fees for registration, resume matching, or job placement.</li>
-            <li><strong>Geographic Eligibility:</strong> Candidates must reside within our supported Louisiana parishes (East Baton Rouge, West Baton Rouge, Ascension, Livingston, Iberville, East Feliciana, West Feliciana, Pointe Coupee, St. Helena).</li>
+            <li><strong>Geographic Eligibility:</strong> Employers must be located in one of our seven approved deregulated placement states (TX, CO, MO, IA, GA, ID, UT). Candidates for remote non-clinical administrative positions are eligible globally.</li>
             <li><strong>Accuracy:</strong> Candidates guarantee that all work experience, certifications, and credentials provided are truthful and accurate.</li>
             <li><strong>Full Terms:</strong> Candidates must review and accept our <Link to="/terms" className="text-emerald-600 font-semibold underline">Candidate Terms & Conditions</Link>.</li>
           </ul>
@@ -4703,7 +4755,7 @@ const TermsOfService = () => {
             <br />
             <strong>Email:</strong> <a href="mailto:contact@ambershealthcare.com" className="text-emerald-600 font-semibold">contact@ambershealthcare.com</a>
             <br />
-            <strong>Location:</strong> Baton Rouge, LA
+            <strong>Operating Entity:</strong> Amber’s Healthcare (Ember Core Studio LLC)
           </p>
         </div>
       </div>
@@ -4799,17 +4851,17 @@ const FAQ = () => {
     {
       category: "employers",
       question: "What healthcare administrative roles do you staff?",
-      answer: "We specialize in remote healthcare administrative talent across Baton Rouge practices, including Medical Billing & Coding, Prior Authorization Specialists, Medical Secretaries & Scribes, Patient Scheduling Coordinators, Front Desk Managers, and Revenue Cycle Specialists."
+      answer: "We specialize in remote healthcare administrative talent for medical practices in deregulated states, including Medical Billing & Coding, Prior Authorization Specialists, Medical Secretaries & Scribes, Patient Scheduling Coordinators, Patient Intake, Front Desk (remote), and Revenue Cycle Specialists."
     },
     {
       category: "candidates",
       question: "Is there any cost for job seekers / candidates?",
-      answer: "None! Candidates are 100% free to register, create profiles, view listings, and get matched with top local healthcare employers."
+      answer: "None! Candidates are 100% free to register, create profiles, view listings, and get matched with top healthcare practices."
     },
     {
       category: "candidates",
-      question: "What parishes in Louisiana do you support?",
-      answer: "We focus on candidate placements across 9 local parishes in the greater Baton Rouge area: East Baton Rouge, West Baton Rouge, Ascension, Livingston, Iberville, East Feliciana, West Feliciana, Pointe Coupee, and St. Helena."
+      question: "What locations are supported for employers and candidates?",
+      answer: "Employers must be located in one of our seven approved deregulated placement states (Texas, Colorado, Missouri, Iowa, Georgia, Idaho, Utah). Candidates applying for remote non-clinical administrative roles are supported globally!"
     },
     {
       category: "referrals",
@@ -4940,7 +4992,7 @@ const FAQ = () => {
 
       <div className="mt-12 text-center bg-emerald-50 rounded-3xl p-8 border border-emerald-100">
         <h3 className="text-xl font-bold text-slate-900 mb-2">Still have questions?</h3>
-        <p className="text-slate-600 mb-6 text-sm sm:text-base">Our Baton Rouge placement advisors are here to assist you.</p>
+        <p className="text-slate-600 mb-6 text-sm sm:text-base">Our placement advisors at Amber's Healthcare are here to assist you.</p>
         <a 
           href="mailto:contact@ambershealthcare.com"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200"
@@ -4957,7 +5009,7 @@ const UnderwriterTool = () => {
   const [facilityName, setFacilityName] = useState("Austin Medical Group");
   const [stateLocation, setStateLocation] = useState("Texas");
   const [candidateName, setCandidateName] = useState("Jane Doe");
-  const [candidateLocation, setCandidateLocation] = useState("Baton Rouge, LA (Global Remote)");
+  const [candidateLocation, setCandidateLocation] = useState("Texas, USA (Global Remote)");
   const [jsonOutput, setJsonOutput] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
